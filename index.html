@@ -820,12 +820,10 @@
         async function dbAdd(storeName, data) {
             if (!data.id) data.id = crypto.randomUUID();
             try {
-                // Lưu lên đám mây Firestore để đồng bộ đa thiết bị tức thời
                 await fsDb.collection(storeName).doc(data.id).set(data);
             } catch (err) {
                 console.warn("Firestore save error:", err);
             }
-            // Lưu vào IndexedDB cục bộ làm cache dự phòng
             return new Promise((resolve) => {
                 if (!db) { resolve(data.id); return; }
                 const transaction = db.transaction([storeName], "readwrite");
@@ -858,7 +856,6 @@
                 return cloudData;
             }
 
-            // Fallback về IndexedDB nếu mất mạng
             return new Promise((resolve) => {
                 if (!db) { resolve([]); return; }
                 const transaction = db.transaction([storeName], "readonly");
@@ -1277,7 +1274,7 @@
                         document.getElementById('examTitleInput').value = file.name.replace(/\.[^/.]+$/, "");
                     }
 
-                    showToast(`Nhận diện thành công ${questions.length} câu hỏi và đáp án đúng!`, "success");
+                    showToast(`Nhận diện thành công ${questions.length} câu hỏi và đáp án gạch chân!`, "success");
                 } catch (err) {
                     console.error(err);
                     showToast("Lỗi khi đọc file Word (.docx).", "error");
@@ -1286,61 +1283,83 @@
             reader.readAsArrayBuffer(file);
         }
 
+        // HÀM NHẬN DIỆN CẤU TRÚC ĐỀ THI VÀ GẠCH CHÂN ĐÁP ÁN ĐÚNG
         function parseAzotaHtmlWithUnderline(html) {
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = html;
 
-            const paragraphs = Array.from(tempDiv.querySelectorAll('p, li, div'));
+            const paragraphs = Array.from(tempDiv.querySelectorAll('p, li, div, tr, td'));
             const questions = [];
             let currentQuestion = null;
             let currentOptions = [];
             let correctOptionIndex = 0;
+            let currentPart = "PART1";
 
-            const questionRegex = /^(câu\s*\d+[:\.])/i;
+            const qRegex = /^(câu\s*\d+[:\.])/i;
 
             paragraphs.forEach(p => {
                 const rawText = p.textContent.trim();
                 if (!rawText) return;
 
-                if (questionRegex.test(rawText)) {
+                if (rawText.toUpperCase().includes("PHẦN I")) {
+                    currentPart = "PART1";
+                    return;
+                }
+                if (rawText.toUpperCase().includes("PHẦN II")) {
+                    currentPart = "PART2";
+                    return;
+                }
+
+                if (qRegex.test(rawText)) {
                     if (currentQuestion) {
                         questions.push({
                             question: currentQuestion,
                             options: currentOptions.length >= 2 ? currentOptions : ["A. ...", "B. ...", "C. ...", "D. ..."],
-                            correct: correctOptionIndex
+                            correct: correctOptionIndex,
+                            type: currentPart
                         });
                     }
-                    currentQuestion = rawText.replace(questionRegex, '').trim();
+                    currentQuestion = rawText.replace(qRegex, '').trim();
                     currentOptions = [];
                     correctOptionIndex = 0;
-                } else {
-                    if (/[A-D][\.\)]/i.test(rawText)) {
-                        const hasUnderline = p.querySelector('u') !== null || 
-                                             p.querySelector('ins') !== null ||
-                                             /text-decoration\s*:\s*underline/i.test(p.innerHTML);
+                    return;
+                }
 
-                        let parts = rawText.split(/(?=[A-D][\.\)])/);
-                        parts.forEach(part => {
-                            const match = part.match(/^([A-D])[\.\)]\s*(.*)/i);
-                            if (match) {
-                                const letter = match[1].toUpperCase();
-                                const idx = letter.charCodeAt(0) - 65;
-                                const optText = part.trim();
+                if (currentQuestion) {
+                    const isUnderlined = p.querySelector('u') !== null || 
+                                         p.querySelector('ins') !== null ||
+                                         /text-decoration\s*:\s*underline/i.test(p.innerHTML);
 
-                                if (hasUnderline) {
-                                    correctOptionIndex = idx >= 0 && idx < 4 ? idx : correctOptionIndex;
-                                }
+                    let parts = rawText.split(/(?=[A-D][\.\)]|[a-d]\))/);
+                    parts.forEach(part => {
+                        const str = part.trim();
+                        if (!str) return;
 
-                                if (idx >= 0 && idx < 4) {
-                                    currentOptions[idx] = optText;
-                                }
+                        const matchMCQ = str.match(/^([A-D])[\.\)]\s*(.*)/i);
+                        const matchTF = str.match(/^([a-d])\)\s*(.*)/i);
+
+                        if (matchMCQ) {
+                            const letter = matchMCQ[1].toUpperCase();
+                            const idx = letter.charCodeAt(0) - 65;
+                            currentOptions[idx] = str;
+
+                            if (isUnderlined) {
+                                correctOptionIndex = idx;
                             }
-                        });
-                    } else if (currentQuestion && currentOptions.length === 0) {
-                        currentQuestion += " " + rawText;
-                    } else if (currentOptions.length > 0) {
-                        currentOptions[currentOptions.length - 1] += " " + rawText;
-                    }
+                        } else if (matchTF) {
+                            const letter = matchTF[1].toLowerCase();
+                            const idx = letter.charCodeAt(0) - 97;
+                            currentOptions[idx] = str;
+
+                            if (isUnderlined) {
+                                correctOptionIndex = idx;
+                            }
+                        } else if (currentOptions.length === 0) {
+                            currentQuestion += " " + str;
+                        } else {
+                            currentOptions[currentOptions.length - 1] += " " + str;
+                        }
+                    });
                 }
             });
 
@@ -1348,7 +1367,8 @@
                 questions.push({
                     question: currentQuestion,
                     options: currentOptions.length >= 2 ? currentOptions : ["A. ...", "B. ...", "C. ...", "D. ..."],
-                    correct: correctOptionIndex
+                    correct: correctOptionIndex,
+                    type: currentPart
                 });
             }
 
@@ -1360,7 +1380,7 @@
             document.getElementById('examsGridContainer').innerHTML = exams.map(e => `
                 <div class="bg-white p-5 rounded-2xl border border-pastel-100 shadow-sm flex flex-col justify-between space-y-4">
                     <div>
-                        <span class="bg-pastel-100 text-pastel-800 text-xs font-bold px-2.5 py-1 rounded-full">${e.topic}</span>
+                        <span class="bg-pastel-100 text-pastel-800 text-xs font-bold px-2.5 py-1 rounded-full">${e.topic || 'Đề thi'}</span>
                         <h3 class="font-bold text-slate-900 text-base mt-3">${e.title}</h3>
                         <p class="text-xs text-slate-500 mt-1">Thời lượng: ${e.duration} phút | ${e.questions ? e.questions.length : 0} câu hỏi</p>
                     </div>
