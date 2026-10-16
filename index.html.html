@@ -1,0 +1,1799 @@
+<!DOCTYPE html>
+<html lang="vi" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trợ lý Ôn thi Công nghệ Nông nghiệp - GDTX Xuyên Mộc</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Be Vietnam Pro -->
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- SheetJS for Excel Export/Import -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <!-- Mammoth.js for Word (.docx) parsing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.16/mammoth.browser.min.js"></script>
+    <!-- Chart.js for statistics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Be Vietnam Pro"', 'sans-serif'],
+                    },
+                    colors: {
+                        pastel: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Be Vietnam Pro', sans-serif; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fadeIn 0.25s ease-out forwards; }
+    </style>
+</head>
+<body class="bg-pastel-50 text-slate-800 h-full flex flex-col overflow-hidden">
+
+    <!-- Custom Modal System -->
+    <div id="customModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animate-fade-in border border-pastel-100">
+            <div id="modalIcon" class="w-12 h-12 rounded-full bg-pastel-100 text-pastel-600 flex items-center justify-center text-xl mb-4 mx-auto">
+                <i class="fa-solid fa-circle-exclamation"></i>
+            </div>
+            <h3 id="modalTitle" class="text-lg font-bold text-slate-900 text-center mb-2">Thông báo</h3>
+            <p id="modalMessage" class="text-sm text-slate-600 text-center mb-6 leading-relaxed">Nội dung thông báo...</p>
+            <div id="modalButtons" class="flex space-x-3 justify-end">
+                <button id="modalCancelBtn" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-medium text-sm transition hidden">Hủy</button>
+                <button id="modalConfirmBtn" class="px-5 py-2 bg-pastel-600 hover:bg-pastel-700 text-white rounded-xl font-medium text-sm shadow-md shadow-pastel-500/20 transition">Đồng ý</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+    <!-- HEADER -->
+    <header class="bg-white border-b border-pastel-200 px-4 py-3 flex items-center justify-between shadow-sm z-20 shrink-0">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-pastel-600 to-pastel-400 text-white flex items-center justify-center shadow-md shadow-pastel-500/30">
+                <i class="fa-solid fa-seedling text-lg"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-slate-900 text-base md:text-lg leading-tight">Trợ Lý Ôn Thi Công Nghệ Nông Nghiệp</h1>
+                <p class="text-xs text-slate-500 font-medium">Trung tâm GDTX – DN – GTVL Xuyên Mộc</p>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-3">
+            <div class="hidden sm:flex items-center bg-pastel-100 text-pastel-800 px-3 py-1.5 rounded-xl font-semibold text-xs border border-pastel-200 shadow-inner">
+                <i class="fa-solid fa-school mr-2 text-pastel-600"></i>
+                <span id="currentClassNameHeader">Đang tải lớp...</span>
+            </div>
+
+            <div class="bg-slate-100 p-1 rounded-xl flex items-center border border-slate-200">
+                <button onclick="switchAppMode('teacher')" id="modeTeacherBtn" class="px-3 py-1 rounded-lg text-xs font-semibold transition bg-white text-pastel-700 shadow-sm">
+                    <i class="fa-solid fa-chalkboard-user mr-1.5"></i>Giáo Viên
+                </button>
+                <button onclick="switchAppMode('student')" id="modeStudentBtn" class="px-3 py-1 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition">
+                    <i class="fa-solid fa-user-graduate mr-1.5"></i>Học Viên Làm Bài
+                </button>
+            </div>
+
+            <div class="relative">
+                <button onclick="openSettingsModal()" class="w-9 h-9 rounded-xl bg-pastel-200 text-pastel-700 font-bold flex items-center justify-center hover:bg-pastel-300 transition border border-pastel-300" title="Cài đặt">
+                    <i class="fa-solid fa-gear"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN APP WRAPPER -->
+    <div id="mainAppContainer" class="flex-1 flex overflow-hidden">
+        
+        <!-- SIDEBAR NAVIGATION -->
+        <aside id="teacherSidebar" class="w-64 bg-white border-r border-pastel-200 flex flex-col shrink-0 z-10 transition-all duration-300 md:translate-x-0">
+            <div class="p-4 border-b border-pastel-100">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Lớp hiện tại</span>
+                    <button onclick="openClassManagerModal()" class="text-xs text-pastel-600 hover:text-pastel-700 font-semibold flex items-center">
+                        <i class="fa-solid fa-arrows-rotate mr-1"></i>Đổi lớp
+                    </button>
+                </div>
+                <div id="activeClassDisplayBox" class="bg-pastel-50 border border-pastel-200 rounded-xl p-3 flex items-center justify-between">
+                    <div class="flex items-center space-x-2 truncate">
+                        <div class="w-8 h-8 rounded-lg bg-pastel-200 text-pastel-700 flex items-center justify-center font-bold text-sm shrink-0">
+                            <i class="fa-solid fa-graduation-cap"></i>
+                        </div>
+                        <div class="truncate">
+                            <h4 id="sidebarClassName" class="font-bold text-sm text-slate-800 truncate">Chưa chọn lớp</h4>
+                            <p id="sidebarClassMeta" class="text-xs text-slate-500 truncate">Nhấn để quản lý lớp</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <nav class="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-1">
+                <button onclick="switchTab('dashboard')" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl font-medium text-sm text-slate-600 hover:bg-pastel-50 hover:text-pastel-700 transition active-tab" data-tab="dashboard">
+                    <i class="fa-solid fa-house-chimney w-5 text-center"></i>
+                    <span>Tổng quan</span>
+                </button>
+                <button onclick="switchTab('students')" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl font-medium text-sm text-slate-600 hover:bg-pastel-50 hover:text-pastel-700 transition" data-tab="students">
+                    <i class="fa-solid fa-users w-5 text-center"></i>
+                    <span>Học viên</span>
+                </button>
+                <button onclick="switchTab('attendance')" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl font-medium text-sm text-slate-600 hover:bg-pastel-50 hover:text-pastel-700 transition" data-tab="attendance">
+                    <i class="fa-solid fa-calendar-check w-5 text-center"></i>
+                    <span>Điểm danh</span>
+                </button>
+                <button onclick="switchTab('exams')" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl font-medium text-sm text-slate-600 hover:bg-pastel-50 hover:text-pastel-700 transition" data-tab="exams">
+                    <i class="fa-solid fa-file-pen w-5 text-center"></i>
+                    <span>Kho đề thi</span>
+                </button>
+                <button onclick="switchTab('questions')" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl font-medium text-sm text-slate-600 hover:bg-pastel-50 hover:text-pastel-700 transition" data-tab="questions">
+                    <i class="fa-solid fa-bank w-5 text-center"></i>
+                    <span>Ngân hàng câu hỏi</span>
+                </button>
+                <button onclick="switchTab('assignments')" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl font-medium text-sm text-slate-600 hover:bg-pastel-50 hover:text-pastel-700 transition" data-tab="assignments">
+                    <i class="fa-solid fa-paper-plane w-5 text-center"></i>
+                    <span>Đề đã giao & Theo dõi</span>
+                </button>
+                <button onclick="switchTab('results')" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl font-medium text-sm text-slate-600 hover:bg-pastel-50 hover:text-pastel-700 transition" data-tab="results">
+                    <i class="fa-solid fa-square-poll-vertical w-5 text-center"></i>
+                    <span>Kết quả thi</span>
+                </button>
+                <button onclick="switchTab('ranking')" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl font-medium text-sm text-slate-600 hover:bg-pastel-50 hover:text-pastel-700 transition" data-tab="ranking">
+                    <i class="fa-solid fa-trophy w-5 text-center"></i>
+                    <span>Bảng xếp hạng lớp</span>
+                </button>
+                <button onclick="switchTab('points')" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl font-medium text-sm text-slate-600 hover:bg-pastel-50 hover:text-pastel-700 transition" data-tab="points">
+                    <i class="fa-solid fa-star-half-stroke w-5 text-center"></i>
+                    <span>Điểm cộng / trừ (Thi đua)</span>
+                </button>
+                <button onclick="switchTab('statistics')" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl font-medium text-sm text-slate-600 hover:bg-pastel-50 hover:text-pastel-700 transition" data-tab="statistics">
+                    <i class="fa-solid fa-chart-line w-5 text-center"></i>
+                    <span>Thống kê & Tiến bộ</span>
+                </button>
+                <button onclick="switchTab('theory')" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl font-medium text-sm text-slate-600 hover:bg-pastel-50 hover:text-pastel-700 transition" data-tab="theory">
+                    <i class="fa-solid fa-book-open w-5 text-center"></i>
+                    <span>Kho lý thuyết ôn tập</span>
+                </button>
+                <button onclick="switchTab('settings')" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl font-medium text-sm text-slate-600 hover:bg-pastel-50 hover:text-pastel-700 transition" data-tab="settings">
+                    <i class="fa-solid fa-sliders w-5 text-center"></i>
+                    <span>Cài đặt & Sao lưu</span>
+                </button>
+            </nav>
+
+            <div class="p-3 border-t border-pastel-100 bg-pastel-50/50">
+                <div class="text-xs text-slate-500 text-center">
+                    <span class="font-semibold text-pastel-700">Storage:</span> <span id="storageModeIndicator">IndexedDB + LocalSync</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- CONTENT AREA -->
+        <main id="mainContentArea" class="flex-1 flex flex-col overflow-hidden bg-slate-50 relative">
+            
+            <!-- DASHBOARD TAB -->
+            <div id="tab-dashboard" class="tab-content flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 space-y-6">
+                <div class="bg-gradient-to-r from-pastel-600 to-sky-500 rounded-2xl p-6 text-white shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center">
+                    <div>
+                        <span class="bg-white/20 text-white text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wider mb-2 inline-block">Môn: Công nghệ Định hướng Nông nghiệp</span>
+                        <h2 class="text-xl md:text-2xl font-bold mb-1" id="dashWelcomeTitle">Xin chào, Giáo viên phụ trách</h2>
+                        <p class="text-pastel-100 text-sm">Hệ thống quản lý ôn thi tốt nghiệp THPT/GDTX Xuyên Mộc.</p>
+                    </div>
+                    <div class="mt-4 md:mt-0 flex space-x-2">
+                        <button onclick="switchTab('exams')" class="bg-white text-pastel-700 hover:bg-pastel-50 px-4 py-2 rounded-xl font-bold text-xs shadow transition flex items-center">
+                            <i class="fa-solid fa-plus mr-2"></i>Tạo đề thi mới
+                        </button>
+                        <button onclick="switchTab('students')" class="bg-pastel-700 text-white hover:bg-pastel-800 px-4 py-2 rounded-xl font-bold text-xs shadow transition flex items-center">
+                            <i class="fa-solid fa-user-plus mr-2"></i>Thêm học viên
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-white p-4 rounded-2xl border border-pastel-100 shadow-sm flex items-center space-x-4">
+                        <div class="w-12 h-12 rounded-xl bg-sky-100 text-sky-600 flex items-center justify-center text-xl shrink-0">
+                            <i class="fa-solid fa-users"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs font-medium text-slate-500">Tổng học viên</p>
+                            <h3 id="statTotalStudents" class="text-xl font-bold text-slate-900">0</h3>
+                        </div>
+                    </div>
+                    <div class="bg-white p-4 rounded-2xl border border-pastel-100 shadow-sm flex items-center space-x-4">
+                        <div class="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-xl shrink-0">
+                            <i class="fa-solid fa-file-invoice"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs font-medium text-slate-500">Đề đã giao</p>
+                            <h3 id="statTotalExams" class="text-xl font-bold text-slate-900">0</h3>
+                        </div>
+                    </div>
+                    <div class="bg-white p-4 rounded-2xl border border-pastel-100 shadow-sm flex items-center space-x-4">
+                        <div class="w-12 h-12 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center text-xl shrink-0">
+                            <i class="fa-solid fa-chart-pie"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs font-medium text-slate-500">Điểm TB lớp</p>
+                            <h3 id="statAvgScore" class="text-xl font-bold text-slate-900">0.0</h3>
+                        </div>
+                    </div>
+                    <div class="bg-white p-4 rounded-2xl border border-pastel-100 shadow-sm flex items-center space-x-4">
+                        <div class="w-12 h-12 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center text-xl shrink-0">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs font-medium text-slate-500">Cần hỗ trợ</p>
+                            <h3 id="statNeedsSupport" class="text-xl font-bold text-slate-900">0</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2 bg-white p-5 rounded-2xl border border-pastel-100 shadow-sm flex flex-col">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-bold text-slate-900 text-base">Phân bố điểm số các bài kiểm tra</h3>
+                        </div>
+                        <div class="flex-1 flex items-center justify-center min-h-[250px]">
+                            <canvas id="scoreDistributionChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-2xl border border-pastel-100 shadow-sm flex flex-col">
+                        <h3 class="font-bold text-slate-900 text-base mb-4 flex items-center justify-between">
+                            <span>Việc cần làm & Cảnh báo</span>
+                            <span class="bg-rose-100 text-rose-700 text-xs px-2 py-0.5 rounded-full font-semibold" id="todoCountBadge">0</span>
+                        </h3>
+                        <div id="todoListContainer" class="space-y-3 flex-1 overflow-y-auto custom-scrollbar pr-1">
+                            <div class="text-center py-8 text-slate-400 text-sm">Chưa có cảnh báo hoặc việc cần làm.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STUDENTS TAB -->
+            <div id="tab-students" class="tab-content flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 space-y-6 hidden">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-4 rounded-2xl border border-pastel-100 shadow-sm">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-900">Quản lý Học viên</h2>
+                        <p class="text-xs text-slate-500">Danh sách học viên thuộc lớp hiện tại.</p>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <button onclick="openAddStudentModal()" class="bg-pastel-600 hover:bg-pastel-700 text-white px-4 py-2 rounded-xl font-bold text-xs shadow transition flex items-center">
+                            <i class="fa-solid fa-user-plus mr-2"></i>Thêm học viên
+                        </button>
+                        <button onclick="openImportExcelModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl font-bold text-xs shadow transition flex items-center">
+                            <i class="fa-solid fa-file-excel mr-2"></i>Nhập Excel / Dán DS
+                        </button>
+                        <button onclick="exportStudentsExcel()" class="bg-sky-600 hover:bg-sky-700 text-white px-4 py-2 rounded-xl font-bold text-xs shadow transition flex items-center">
+                            <i class="fa-solid fa-download mr-2"></i>Xuất Excel
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-white p-4 rounded-2xl border border-pastel-100 shadow-sm flex flex-col md:flex-row gap-3">
+                    <div class="flex-1 relative">
+                        <i class="fa-solid fa-search absolute left-3.5 top-3 text-slate-400"></i>
+                        <input type="text" id="studentSearchInput" oninput="renderStudentsTable()" placeholder="Tìm kiếm theo tên hoặc mã học viên..." class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-pastel-500">
+                    </div>
+                    <select id="studentGenderFilter" onchange="renderStudentsTable()" class="px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-pastel-500">
+                        <option value="">Tất cả giới tính</option>
+                        <option value="Nam">Nam</option>
+                        <option value="Nữ">Nữ</option>
+                    </select>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-pastel-100 shadow-sm overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-pastel-50/50 border-b border-pastel-100 text-xs font-bold text-slate-600 uppercase tracking-wider">
+                                    <th class="p-4">STT</th>
+                                    <th class="p-4">Học viên</th>
+                                    <th class="p-4">Mã HV</th>
+                                    <th class="p-4">Giới tính / Ngày sinh</th>
+                                    <th class="p-4">Số điện thoại</th>
+                                    <th class="p-4">Điểm TB</th>
+                                    <th class="p-4 text-center">Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody id="studentsTableBody" class="divide-y divide-slate-100 text-sm"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ATTENDANCE TAB -->
+            <div id="tab-attendance" class="tab-content flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 space-y-6 hidden">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-4 rounded-2xl border border-pastel-100 shadow-sm">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-900">Điểm danh Lớp</h2>
+                        <p class="text-xs text-slate-500">Quản lý chuyên cần học viên theo ngày.</p>
+                    </div>
+                    <div class="flex flex-wrap gap-2 items-center">
+                        <label class="text-xs font-semibold text-slate-600">Chọn ngày:</label>
+                        <input type="date" id="attendanceDatepicker" onchange="loadAttendanceForDate()" class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium">
+                        <button onclick="markAllPresent()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl font-bold text-xs shadow transition flex items-center">
+                            <i class="fa-solid fa-check-double mr-1.5"></i>Tất cả có mặt
+                        </button>
+                    </div>
+                </div>
+                <div class="bg-white rounded-2xl border border-pastel-100 shadow-sm overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-pastel-50/50 border-b border-pastel-100 text-xs font-bold text-slate-600 uppercase tracking-wider">
+                                    <th class="p-4">STT</th>
+                                    <th class="p-4">Học viên</th>
+                                    <th class="p-4">Mã HV</th>
+                                    <th class="p-4 text-center">Trạng thái điểm danh</th>
+                                    <th class="p-4">Ghi chú</th>
+                                </tr>
+                            </thead>
+                            <tbody id="attendanceTableBody" class="divide-y divide-slate-100 text-sm"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- EXAMS TAB -->
+            <div id="tab-exams" class="tab-content flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 space-y-6 hidden">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-4 rounded-2xl border border-pastel-100 shadow-sm">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-900">Kho Đề Thi & Tạo Đề</h2>
+                        <p class="text-xs text-slate-500">Soạn thảo và quản lý đề thi (Hỗ trợ đáp án đúng gạch chân).</p>
+                    </div>
+                    <button onclick="openCreateExamModal()" class="bg-pastel-600 hover:bg-pastel-700 text-white px-4 py-2 rounded-xl font-bold text-xs shadow transition flex items-center">
+                        <i class="fa-solid fa-plus mr-2"></i>Tạo đề thi mới
+                    </button>
+                </div>
+                <div id="examsGridContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+            </div>
+
+            <!-- QUESTION BANK TAB -->
+            <div id="tab-questions" class="tab-content flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 space-y-6 hidden">
+                <div class="bg-white p-4 rounded-2xl border border-pastel-100 shadow-sm">
+                    <h2 class="text-lg font-bold text-slate-900">Ngân hàng Câu hỏi Ôn tập</h2>
+                    <p class="text-xs text-slate-500">Lưu trữ câu hỏi trắc nghiệm.</p>
+                </div>
+                <div id="questionsListContainer" class="space-y-4"></div>
+            </div>
+
+            <!-- ASSIGNMENTS TAB -->
+            <div id="tab-assignments" class="tab-content flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 space-y-6 hidden">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-4 rounded-2xl border border-pastel-100 shadow-sm">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-900">Đề đã giao & Theo dõi tiến độ</h2>
+                        <p class="text-xs text-slate-500">Quản lý bài thi đã giao cho lớp hiện tại.</p>
+                    </div>
+                    <button onclick="openAssignExamModal()" class="bg-pastel-600 hover:bg-pastel-700 text-white px-4 py-2 rounded-xl font-bold text-xs shadow transition flex items-center">
+                        <i class="fa-solid fa-paper-plane mr-2"></i>Giao đề cho lớp
+                    </button>
+                </div>
+                <div id="assignmentsGridContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+            </div>
+
+            <!-- RESULTS TAB -->
+            <div id="tab-results" class="tab-content flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 space-y-6 hidden">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-4 rounded-2xl border border-pastel-100 shadow-sm">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-900">Kết quả Bài thi</h2>
+                        <p class="text-xs text-slate-500">Thống kê điểm số và bài nộp của học viên.</p>
+                    </div>
+                    <select id="resultExamFilter" onchange="renderResultsTable()" class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium">
+                        <option value="">Tất cả bài thi</option>
+                    </select>
+                </div>
+                <div class="bg-white rounded-2xl border border-pastel-100 shadow-sm overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-pastel-50/50 border-b border-pastel-100 text-xs font-bold text-slate-600 uppercase tracking-wider">
+                                    <th class="p-4">STT</th>
+                                    <th class="p-4">Học viên</th>
+                                    <th class="p-4">Tên bài thi</th>
+                                    <th class="p-4">Điểm</th>
+                                    <th class="p-4">Đúng / Sai / Trống</th>
+                                    <th class="p-4">Thời gian nộp</th>
+                                    <th class="p-4 text-center">Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody id="resultsTableBody" class="divide-y divide-slate-100 text-sm"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RANKING TAB -->
+            <div id="tab-ranking" class="tab-content flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 space-y-6 hidden">
+                <div class="bg-white p-4 rounded-2xl border border-pastel-100 shadow-sm">
+                    <h2 class="text-lg font-bold text-slate-900">Bảng Xếp Hạng Lớp</h2>
+                    <p class="text-xs text-slate-500">Xếp hạng dựa trên điểm trung bình.</p>
+                </div>
+                <div id="rankingListContainer" class="space-y-3"></div>
+            </div>
+
+            <!-- POINTS TAB -->
+            <div id="tab-points" class="tab-content flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 space-y-6 hidden">
+                <div class="flex justify-between items-center bg-white p-4 rounded-2xl border border-pastel-100 shadow-sm">
+                    <h2 class="text-lg font-bold text-slate-900">Điểm Cộng / Trừ (Thi Đua)</h2>
+                    <button onclick="openAddPointModal()" class="bg-pastel-600 hover:bg-pastel-700 text-white px-4 py-2 rounded-xl font-bold text-xs shadow transition">Thêm điểm</button>
+                </div>
+                <div class="bg-white rounded-2xl border border-pastel-100 shadow-sm overflow-hidden">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-pastel-50/50 border-b border-pastel-100 text-xs font-bold text-slate-600 uppercase tracking-wider">
+                                <th class="p-4">Thời gian</th>
+                                <th class="p-4">Học viên</th>
+                                <th class="p-4 text-center">Điểm</th>
+                                <th class="p-4">Lý do</th>
+                                <th class="p-4 text-center">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pointsTableBody" class="divide-y divide-slate-100 text-sm"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- STATISTICS TAB -->
+            <div id="tab-statistics" class="tab-content flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 space-y-6 hidden">
+                <div class="bg-white p-4 rounded-2xl border border-pastel-100 shadow-sm">
+                    <h2 class="text-lg font-bold text-slate-900">Thống kê & Phân tích</h2>
+                </div>
+            </div>
+
+            <!-- THEORY REPO TAB -->
+            <div id="tab-theory" class="tab-content flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 space-y-6 hidden">
+                <div class="bg-white p-4 rounded-2xl border border-pastel-100 shadow-sm">
+                    <h2 class="text-lg font-bold text-slate-900">Kho Lý thuyết Ôn tập</h2>
+                </div>
+                <div id="theoryGridContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+            </div>
+
+            <!-- SETTINGS TAB -->
+            <div id="tab-settings" class="tab-content flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 space-y-6 hidden">
+                <div class="bg-white p-6 rounded-2xl border border-pastel-100 shadow-sm space-y-6 max-w-2xl mx-auto">
+                    <h2 class="text-lg font-bold text-slate-900">Cài đặt & Sao lưu dữ liệu</h2>
+                    <button onclick="backupDataJSON()" class="bg-pastel-600 hover:bg-pastel-700 text-white px-5 py-2.5 rounded-xl font-bold text-xs shadow transition">Tải file sao lưu JSON</button>
+                    <hr class="border-slate-100">
+                    <button onclick="confirmResetDatabase()" class="bg-rose-600 hover:bg-rose-700 text-white px-5 py-2.5 rounded-xl font-bold text-xs shadow transition">Xóa sạch toàn bộ dữ liệu</button>
+                </div>
+            </div>
+
+            <!-- STUDENT EXAM PORTAL VIEW -->
+            <div id="studentPortalContainer" class="absolute inset-0 bg-slate-50 z-30 flex flex-col overflow-y-auto custom-scrollbar hidden">
+                <div class="bg-white border-b border-pastel-200 px-6 py-4 flex items-center justify-between shadow-sm">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-xl bg-pastel-600 text-white flex items-center justify-center font-bold">
+                            <i class="fa-solid fa-user-graduate"></i>
+                        </div>
+                        <div>
+                            <h2 class="font-bold text-slate-900 text-base">Cổng Làm Bài Thi Học Viên</h2>
+                            <p class="text-xs text-slate-500">Trung tâm GDTX Xuyên Mộc</p>
+                        </div>
+                    </div>
+                    <button onclick="switchAppMode('teacher')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl text-xs font-semibold transition">
+                        <i class="fa-solid fa-arrow-left mr-1.5"></i>Quay lại giao diện Giáo viên
+                    </button>
+                </div>
+
+                <div class="max-w-4xl mx-auto w-full p-6 space-y-6 my-auto">
+                    <div id="studentLoginCard" class="bg-white p-6 rounded-2xl border border-pastel-100 shadow-sm space-y-4">
+                        <h3 class="text-lg font-bold text-slate-900">1. Chọn lớp và tên học viên của bạn</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Chọn lớp</label>
+                                <select id="studentPortalClassSelect" onchange="onStudentPortalClassChange()" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:border-pastel-500">
+                                    <option value="">-- Chọn lớp của bạn --</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Chọn họ và tên</label>
+                                <select id="studentPortalStudentSelect" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:border-pastel-500">
+                                    <option value="">-- Chọn tên học viên --</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button onclick="loadStudentAssignedExams()" class="w-full bg-pastel-600 hover:bg-pastel-700 text-white py-3 rounded-xl font-bold text-sm shadow-md transition">
+                            Xác nhận & Xem danh sách đề thi
+                        </button>
+                    </div>
+
+                    <div id="studentExamsCard" class="bg-white p-6 rounded-2xl border border-pastel-100 shadow-sm space-y-4 hidden">
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-lg font-bold text-slate-900">2. Danh sách đề thi được giao</h3>
+                            <button onclick="resetStudentPortal()" class="text-xs text-pastel-600 font-semibold hover:underline">Đổi học viên</button>
+                        </div>
+                        <div id="studentExamListContainer" class="space-y-3"></div>
+                    </div>
+
+                    <div id="examTakingInterface" class="bg-white p-6 rounded-2xl border border-pastel-100 shadow-sm space-y-6 hidden">
+                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center pb-4 border-b border-slate-100 gap-3">
+                            <div>
+                                <span class="bg-pastel-100 text-pastel-800 text-xs font-bold px-3 py-1 rounded-full">Đề thi</span>
+                                <h3 id="takingExamTitle" class="text-xl font-bold text-slate-900 mt-2">Tên đề thi</h3>
+                            </div>
+                            <div class="bg-rose-50 border border-rose-200 text-rose-700 px-4 py-2 rounded-xl font-mono font-bold text-base flex items-center shadow-inner">
+                                <i class="fa-solid fa-stopwatch mr-2 text-rose-500"></i>
+                                <span id="examTimerDisplay">45:00</span>
+                            </div>
+                        </div>
+
+                        <div id="takingQuestionsContainer" class="space-y-6"></div>
+
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
+                            <span class="text-xs font-bold text-slate-600 uppercase">Bảng câu hỏi nhanh:</span>
+                            <div id="examPaletteContainer" class="flex flex-wrap gap-2"></div>
+                        </div>
+
+                        <div class="flex justify-end space-x-3 pt-4 border-t border-slate-100">
+                            <button onclick="confirmSubmitExam()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-3 rounded-xl font-bold text-sm shadow-lg transition flex items-center">
+                                <i class="fa-solid fa-paper-plane mr-2"></i>Nộp bài thi
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="examResultReviewCard" class="bg-white p-6 rounded-2xl border border-pastel-100 shadow-sm space-y-6 hidden">
+                        <div class="text-center space-y-2">
+                            <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-2xl mx-auto shadow-inner">
+                                <i class="fa-solid fa-award"></i>
+                            </div>
+                            <h3 class="text-2xl font-bold text-slate-900">Kết quả bài làm</h3>
+                        </div>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 bg-pastel-50 p-4 rounded-xl text-center border border-pastel-100">
+                            <div>
+                                <p class="text-xs text-slate-500 font-medium">Điểm số</p>
+                                <h4 id="reviewScoreVal" class="text-2xl font-bold text-pastel-700">0.0</h4>
+                            </div>
+                            <div>
+                                <p class="text-xs text-slate-500 font-medium">Số câu đúng</p>
+                                <h4 id="reviewCorrectVal" class="text-2xl font-bold text-emerald-600">0</h4>
+                            </div>
+                            <div>
+                                <p class="text-xs text-slate-500 font-medium">Số câu sai</p>
+                                <h4 id="reviewWrongVal" class="text-2xl font-bold text-rose-600">0</h4>
+                            </div>
+                            <div>
+                                <p class="text-xs text-slate-500 font-medium">Chưa trả lời</p>
+                                <h4 id="reviewBlankVal" class="text-2xl font-bold text-slate-600">0</h4>
+                            </div>
+                        </div>
+                        <button onclick="resetStudentPortalToExams()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 py-3 rounded-xl font-bold text-sm transition">
+                            Quay lại danh sách đề thi
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- VIEW EXAM DETAILS MODAL -->
+    <div id="viewExamModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6 animate-fade-in space-y-4 max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <div class="flex justify-between items-center pb-3 border-b border-slate-100">
+                <div>
+                    <span id="viewExamTopicBadge" class="bg-pastel-100 text-pastel-800 text-xs font-bold px-2.5 py-1 rounded-full">Chủ đề</span>
+                    <h3 id="viewExamTitle" class="text-lg font-bold text-slate-900 mt-2">Chi tiết đề thi</h3>
+                </div>
+                <button onclick="closeModal('viewExamModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div id="viewExamQuestionsContainer" class="space-y-4 max-h-[60vh] overflow-y-auto custom-scrollbar pr-2"></div>
+            <div class="pt-3 border-t border-slate-100 flex justify-end">
+                <button onclick="closeModal('viewExamModal')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-5 py-2 rounded-xl text-xs font-semibold transition">Đóng</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CLASS MANAGER MODAL -->
+    <div id="classManagerModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 animate-fade-in space-y-4">
+            <div class="flex justify-between items-center pb-3 border-b border-slate-100">
+                <h3 class="text-lg font-bold text-slate-900">Quản lý Lớp học</h3>
+                <button onclick="closeModal('classManagerModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="space-y-3 max-h-[60vh] overflow-y-auto custom-scrollbar" id="classListModalContainer"></div>
+            <div class="pt-3 border-t border-slate-100 flex justify-between items-center">
+                <button onclick="openAddClassModal()" class="bg-pastel-600 hover:bg-pastel-700 text-white px-4 py-2 rounded-xl text-xs font-bold shadow transition flex items-center">
+                    <i class="fa-solid fa-plus mr-1.5"></i>Thêm lớp mới
+                </button>
+                <button onclick="closeModal('classManagerModal')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl text-xs font-semibold transition">Đóng</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADD CLASS MODAL -->
+    <div id="addClassModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animate-fade-in space-y-4">
+            <h3 class="text-lg font-bold text-slate-900">Thêm lớp học mới</h3>
+            <div>
+                <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Tên lớp</label>
+                <input type="text" id="newClassNameInput" placeholder="Lớp 12A - Công nghệ Nông nghiệp" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Niên khóa</label>
+                <input type="text" id="newClassYearInput" value="2026 - 2027" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+            </div>
+            <div class="flex justify-end space-x-2 pt-2">
+                <button onclick="closeModal('addClassModal')" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl text-xs font-semibold">Hủy</button>
+                <button onclick="saveNewClass()" class="px-5 py-2 bg-pastel-600 text-white rounded-xl text-xs font-bold shadow-md">Lưu lớp</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CREATE EXAM MODAL -->
+    <div id="createExamModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-xl w-full p-6 animate-fade-in space-y-4 max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <h3 class="text-lg font-bold text-slate-900">Tạo đề thi mới</h3>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Tên đề thi</label>
+                    <input type="text" id="examTitleInput" placeholder="Đề thi thử Tốt nghiệp số 01" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-pastel-500">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Chủ đề</label>
+                        <input type="text" id="examTopicInput" value="Trồng trọt & Chăn nuôi" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-pastel-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Thời gian (phút)</label>
+                        <input type="number" id="examDurationInput" value="45" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-pastel-500">
+                    </div>
+                </div>
+
+                <div class="bg-pastel-50 p-4 rounded-xl border border-pastel-200 space-y-2">
+                    <label class="block text-xs font-bold text-slate-700 uppercase flex items-center">
+                        <i class="fa-solid fa-file-word text-blue-600 mr-1.5 text-base"></i>Tải lên file Word (.docx) (Đáp án đúng có <u>Gạch chân</u>)
+                    </label>
+                    <input type="file" id="wordExamFileInput" accept=".docx" onchange="handleWordExamUpload(this)" class="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 uppercase mb-1">JSON câu hỏi</label>
+                    <textarea id="examQuestionsRawInput" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono focus:outline-none focus:border-pastel-500" rows="6"></textarea>
+                </div>
+            </div>
+            <div class="flex justify-end space-x-2 pt-2">
+                <button onclick="closeModal('createExamModal')" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl text-xs font-semibold">Hủy</button>
+                <button onclick="saveNewExam()" class="px-5 py-2 bg-pastel-600 text-white rounded-xl text-xs font-bold shadow-md">Lưu đề thi</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ASSIGN EXAM MODAL -->
+    <div id="assignExamModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animate-fade-in space-y-4">
+            <h3 class="text-lg font-bold text-slate-900">Giao đề thi cho lớp</h3>
+            <div>
+                <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Chọn đề thi</label>
+                <select id="assignExamSelect" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-pastel-500"></select>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Bắt đầu</label>
+                    <input type="datetime-local" id="assignStartInput" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Hạn nộp</label>
+                    <input type="datetime-local" id="assignDeadlineInput" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+                </div>
+            </div>
+            <div class="flex justify-end space-x-2 pt-2">
+                <button onclick="closeModal('assignExamModal')" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl text-xs font-semibold">Hủy</button>
+                <button onclick="saveExamAssignment()" class="px-5 py-2 bg-pastel-600 text-white rounded-xl text-xs font-bold shadow-md">Giao đề ngay</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- STUDENT MODAL -->
+    <div id="studentModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animate-fade-in space-y-4">
+            <h3 id="studentModalTitle" class="text-lg font-bold text-slate-900">Thêm học viên</h3>
+            <input type="hidden" id="modalStudentId">
+            <div>
+                <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Họ và tên</label>
+                <input type="text" id="modalStudentName" placeholder="Nguyễn Văn A" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Mã HV</label>
+                    <input type="text" id="modalStudentCode" placeholder="HV001" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Giới tính</label>
+                    <select id="modalStudentGender" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                        <option value="Nam">Nam</option>
+                        <option value="Nữ">Nữ</option>
+                    </select>
+                </div>
+            </div>
+            <div class="flex justify-end space-x-2 pt-2">
+                <button onclick="closeModal('studentModal')" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl text-xs font-semibold">Hủy</button>
+                <button onclick="saveStudentFromModal()" class="px-5 py-2 bg-pastel-600 text-white rounded-xl text-xs font-bold shadow-md">Lưu</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- IMPORT EXCEL MODAL -->
+    <div id="importExcelModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 animate-fade-in space-y-4">
+            <h3 class="text-lg font-bold text-slate-900">Nhập danh sách học viên</h3>
+            <input type="file" id="excelFileInput" accept=".xlsx, .xls" class="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700">
+            <textarea id="pasteStudentsText" placeholder="Nguyễn Văn A&#10;Trần Thị B" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono" rows="4"></textarea>
+            <div class="flex justify-end space-x-2 pt-2">
+                <button onclick="closeModal('importExcelModal')" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl text-xs font-semibold">Hủy</button>
+                <button onclick="processImportStudents()" class="px-5 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold shadow-md">Xác nhận</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADD POINT MODAL -->
+    <div id="addPointModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animate-fade-in space-y-4">
+            <h3 class="text-lg font-bold text-slate-900">Cộng / Trừ Điểm Thi Đua</h3>
+            <select id="pointStudentSelect" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm"></select>
+            <div class="grid grid-cols-2 gap-3">
+                <input type="number" step="0.5" id="pointValueInput" value="1" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                <select id="pointTypeSelect" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                    <option value="plus">Cộng điểm</option>
+                    <option value="minus">Trừ điểm</option>
+                </select>
+            </div>
+            <input type="text" id="pointReasonInput" placeholder="Lý do..." class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+            <div class="flex justify-end space-x-2 pt-2">
+                <button onclick="closeModal('addPointModal')" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl text-xs font-semibold">Hủy</button>
+                <button onclick="savePointRecord()" class="px-5 py-2 bg-pastel-600 text-white rounded-xl text-xs font-bold shadow-md">Lưu</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const DB_NAME = "GDTX_XuyenMoc_AgriDB";
+        const DB_VERSION = 1;
+        let db = null;
+
+        const STORES = ['classes', 'students', 'attendance', 'exams', 'questions', 'assignments', 'attempts', 'scores', 'points', 'theory'];
+
+        let currentClassId = localStorage.getItem("currentClassId") || null;
+        let currentAppMode = "teacher";
+        let activeExamSession = null;
+        let scoreChart = null;
+
+        function initDatabase() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+                request.onerror = (e) => reject(e.target.error);
+                request.onsuccess = (e) => { db = e.target.result; resolve(db); };
+                request.onupgradeneeded = (e) => {
+                    const database = e.target.result;
+                    STORES.forEach(storeName => {
+                        if (!database.objectStoreNames.contains(storeName)) {
+                            database.createObjectStore(storeName, { keyPath: 'id' });
+                        }
+                    });
+                };
+            });
+        }
+
+        // ==========================================
+        // CƠ CHẾ ĐỒNG BỘ LOCALSTORAGE ĐỂ CHỐNG MẤT DỮ LIỆU
+        // ==========================================
+        async function saveAllToLocalStorage() {
+            try {
+                const backupData = {};
+                for (let storeName of STORES) {
+                    backupData[storeName] = await dbGetAllDirect(storeName);
+                }
+                localStorage.setItem("GDTX_AUTO_BACKUP", JSON.stringify(backupData));
+            } catch (e) {
+                console.error("LocalStorage backup error:", e);
+            }
+        }
+
+        async function restoreFromLocalStorageIfNeeded() {
+            try {
+                const raw = localStorage.getItem("GDTX_AUTO_BACKUP");
+                if (!raw) return;
+                const backupData = JSON.parse(raw);
+                
+                for (let storeName of STORES) {
+                    const existing = await dbGetAllDirect(storeName);
+                    if (existing.length === 0 && backupData[storeName] && backupData[storeName].length > 0) {
+                        for (let item of backupData[storeName]) {
+                            await new Promise((res, rej) => {
+                                const tx = db.transaction([storeName], "readwrite");
+                                const st = tx.objectStore(storeName);
+                                st.put(item);
+                                tx.oncomplete = () => res();
+                                tx.onerror = () => rej(tx.error);
+                            });
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error("Restore error:", e);
+            }
+        }
+
+        function dbGetAllDirect(storeName) {
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction([storeName], "readonly");
+                const store = transaction.objectStore(storeName);
+                const request = store.getAll();
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = (e) => reject(e.target.error);
+            });
+        }
+
+        async function dbAdd(storeName, data) {
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction([storeName], "readwrite");
+                const store = transaction.objectStore(storeName);
+                if (!data.id) data.id = crypto.randomUUID();
+                const request = store.put(data);
+                request.onsuccess = async () => {
+                    await saveAllToLocalStorage(); // Tự động backup ngay sau khi thêm
+                    resolve(data.id);
+                };
+                request.onerror = (e) => reject(e.target.error);
+            });
+        }
+
+        async function dbGetAll(storeName) {
+            return await dbGetAllDirect(storeName);
+        }
+
+        async function dbDelete(storeName, id) {
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction([storeName], "readwrite");
+                const store = transaction.objectStore(storeName);
+                const request = store.delete(id);
+                request.onsuccess = async () => {
+                    await saveAllToLocalStorage(); // Tự động backup ngay sau khi xóa
+                    resolve(true);
+                };
+                request.onerror = (e) => reject(e.target.error);
+            });
+        }
+
+        async function initApp() {
+            try {
+                await initDatabase();
+                await restoreFromLocalStorageIfNeeded(); // Khôi phục dữ liệu từ LocalStorage nếu IndexedDB bị trống
+                await seedInitialDataIfNeeded();
+                await saveAllToLocalStorage(); // Lưu đồng bộ ban đầu
+                await loadClassesList();
+                if (!currentClassId) {
+                    const classes = await dbGetAll('classes');
+                    if (classes.length > 0) {
+                        currentClassId = classes[0].id;
+                        localStorage.setItem("currentClassId", currentClassId);
+                    }
+                }
+                await refreshCurrentClassUI();
+                switchTab('dashboard');
+            } catch (err) {
+                console.error("Init error:", err);
+            }
+        }
+
+        async function seedInitialDataIfNeeded() {
+            const classes = await dbGetAll('classes');
+            if (classes.length === 0) {
+                const defaultClassId = crypto.randomUUID();
+                await dbAdd('classes', {
+                    id: defaultClassId,
+                    name: 'Lớp 12B - Công nghệ Nông nghiệp',
+                    year: '2025 - 2026',
+                    description: 'Trung tâm GDTX Xuyên Mộc'
+                });
+                await dbAdd('students', {
+                    id: crypto.randomUUID(),
+                    classId: defaultClassId,
+                    name: 'Nguyễn Văn An',
+                    code: 'HV001',
+                    gender: 'Nam',
+                    dob: '2008-05-12',
+                    phone: '0901234567'
+                });
+            }
+        }
+
+        async function loadClassesList() {
+            const classes = await dbGetAll('classes');
+            const selectContainer = document.getElementById('studentPortalClassSelect');
+            if (selectContainer) {
+                selectContainer.innerHTML = '<option value="">-- Chọn lớp của bạn --</option>' + 
+                    classes.map(c => `<option value="${c.id}">${c.name} (${c.year})</option>`).join('');
+            }
+        }
+
+        async function refreshCurrentClassUI() {
+            const classes = await dbGetAll('classes');
+            const currentClass = classes.find(c => c.id === currentClassId) || classes[0];
+            if (currentClass) {
+                currentClassId = currentClass.id;
+                localStorage.setItem("currentClassId", currentClassId);
+                document.getElementById('currentClassNameHeader').innerText = currentClass.name;
+                document.getElementById('sidebarClassName').innerText = currentClass.name;
+                document.getElementById('sidebarClassMeta').innerText = currentClass.year;
+            }
+            await loadDashboardData();
+            await renderStudentsTable();
+            await renderAttendanceTable();
+            await renderExamsGrid();
+            await renderQuestionsList();
+            await renderAssignmentsGrid();
+            await populateResultExamFilter();
+            await renderResultsTable();
+            await renderRankingList();
+            await renderPointsTable();
+            await renderTheoryGrid();
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('bg-pastel-100', 'text-pastel-700', 'font-bold'));
+            
+            const targetTab = document.getElementById(`tab-${tabId}`);
+            if (targetTab) targetTab.classList.remove('hidden');
+
+            const targetBtn = document.querySelector(`[data-tab="${tabId}"]`);
+            if (targetBtn) targetBtn.classList.add('bg-pastel-100', 'text-pastel-700', 'font-bold');
+        }
+
+        function switchAppMode(mode) {
+            currentAppMode = mode;
+            const studentPortal = document.getElementById('studentPortalContainer');
+            const btnTeacher = document.getElementById('modeTeacherBtn');
+            const btnStudent = document.getElementById('modeStudentBtn');
+
+            if (mode === 'student') {
+                studentPortal.classList.remove('hidden');
+                btnStudent.className = "px-3 py-1 rounded-lg text-xs font-semibold transition bg-white text-pastel-700 shadow-sm";
+                btnTeacher.className = "px-3 py-1 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition";
+                loadClassesList();
+            } else {
+                studentPortal.classList.add('hidden');
+                btnTeacher.className = "px-3 py-1 rounded-lg text-xs font-semibold transition bg-white text-pastel-700 shadow-sm";
+                btnStudent.className = "px-3 py-1 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition";
+                refreshCurrentClassUI();
+            }
+        }
+
+        async function loadDashboardData() {
+            const students = (await dbGetAll('students')).filter(s => s.classId === currentClassId);
+            const assignments = (await dbGetAll('assignments')).filter(a => a.classId === currentClassId);
+            const attempts = (await dbGetAll('attempts')).filter(a => a.classId === currentClassId);
+
+            document.getElementById('statTotalStudents').innerText = students.length;
+            document.getElementById('statTotalExams').innerText = assignments.length;
+
+            let totalScore = 0;
+            let ranges = { '0-4.9': 0, '5-6.9': 0, '7-8.4': 0, '8.5-10': 0 };
+            attempts.forEach(att => {
+                const sc = att.score || 0;
+                totalScore += sc;
+                if (sc < 5) ranges['0-4.9']++;
+                else if (sc < 7) ranges['5-6.9']++;
+                else if (sc < 8.5) ranges['7-8.4']++;
+                else ranges['8.5-10']++;
+            });
+            const avgScore = attempts.length > 0 ? (totalScore / attempts.length).toFixed(1) : '0.0';
+            document.getElementById('statAvgScore').innerText = avgScore;
+
+            const ctx = document.getElementById('scoreDistributionChart').getContext('2d');
+            if (scoreChart) scoreChart.destroy();
+            scoreChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Yếu (0-4.9)', 'Trung bình (5-6.9)', 'Khá (7-8.4)', 'Giỏi/XS (8.5-10)'],
+                    datasets: [{
+                        label: 'Số lượng bài thi',
+                        data: [ranges['0-4.9'], ranges['5-6.9'], ranges['7-8.4'], ranges['8.5-10']],
+                        backgroundColor: ['#f43f5e', '#fbbf24', '#38bdf8', '#10b981'],
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+                }
+            });
+        }
+
+        async function renderStudentsTable() {
+            const students = (await dbGetAll('students')).filter(s => s.classId === currentClassId);
+            const searchVal = document.getElementById('studentSearchInput').value.toLowerCase();
+            const genderVal = document.getElementById('studentGenderFilter').value;
+
+            const filtered = students.filter(s => {
+                const matchName = s.name.toLowerCase().includes(searchVal) || s.code.toLowerCase().includes(searchVal);
+                const matchGender = !genderVal || s.gender === genderVal;
+                return matchName && matchGender;
+            });
+
+            const tbody = document.getElementById('studentsTableBody');
+            tbody.innerHTML = filtered.map((s, idx) => `
+                <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+                    <td class="p-4 font-medium text-slate-500">${idx + 1}</td>
+                    <td class="p-4 font-bold text-slate-900">${s.name}</td>
+                    <td class="p-4 font-mono text-xs text-pastel-700 font-bold">${s.code}</td>
+                    <td class="p-4">${s.gender} ${s.dob ? ' - ' + s.dob : ''}</td>
+                    <td class="p-4 text-slate-600">${s.phone || '---'}</td>
+                    <td class="p-4 font-bold text-emerald-600">---</td>
+                    <td class="p-4 text-center">
+                        <button onclick="deleteStudent('${s.id}')" class="p-2 text-slate-400 hover:text-rose-600"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('') || `<tr><td colspan="7" class="p-6 text-center text-slate-400">Không tìm thấy học viên phù hợp.</td></tr>`;
+        }
+
+        async function exportStudentsExcel() {
+            const students = (await dbGetAll('students')).filter(s => s.classId === currentClassId);
+            if (students.length === 0) {
+                showToast("Không có học viên nào trong lớp để xuất.", "error");
+                return;
+            }
+            const data = students.map((s, idx) => ({
+                "STT": idx + 1,
+                "Họ và tên": s.name,
+                "Mã học viên": s.code,
+                "Giới tính": s.gender,
+                "Số điện thoại": s.phone || ""
+            }));
+            const worksheet = XLSX.utils.json_to_sheet(data);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "DanhSachHocVien");
+            XLSX.writeFile(workbook, `DanhSachHocVien_${currentClassId}.xlsx`);
+            showToast("Xuất file Excel thành công!", "success");
+        }
+
+        function openImportExcelModal() {
+            document.getElementById('excelFileInput').value = "";
+            document.getElementById('pasteStudentsText').value = "";
+            openModal('importExcelModal');
+        }
+
+        async function processImportStudents() {
+            const fileInput = document.getElementById('excelFileInput');
+            const pasteText = document.getElementById('pasteStudentsText').value.trim();
+            let importedCount = 0;
+
+            if (fileInput.files && fileInput.files[0]) {
+                const file = fileInput.files[0];
+                const reader = new FileReader();
+                reader.onload = async function(e) {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const firstSheetName = workbook.SheetNames[0];
+                        const worksheet = workbook.Sheets[firstSheetName];
+                        const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                        
+                        for (let i = 0; i < rows.length; i++) {
+                            const row = rows[i];
+                            if (!row || row.length === 0) continue;
+                            if (i === 0 && (row.some(cell => cell && cell.toString().toLowerCase().includes('họ') || cell.toString().toLowerCase().includes('stt')))) continue;
+                            
+                            const name = row[1] || row[0];
+                            if (!name) continue;
+                            const code = row[2] || row[1] || ('HV' + Math.floor(100 + Math.random() * 900));
+                            const gender = row[3] || 'Nam';
+                            
+                            await dbAdd('students', {
+                                id: crypto.randomUUID(),
+                                classId: currentClassId,
+                                name: name.toString().trim(),
+                                code: code.toString().trim(),
+                                gender: gender.toString().trim(),
+                                dob: '',
+                                phone: ''
+                            });
+                            importedCount++;
+                        }
+                        closeModal('importExcelModal');
+                        await renderStudentsTable();
+                        await loadDashboardData();
+                        showToast(`Đã nhập thành công ${importedCount} học viên!`, "success");
+                    } catch (err) {
+                        console.error(err);
+                        showToast("Lỗi khi đọc file Excel.", "error");
+                    }
+                };
+                reader.readAsArrayBuffer(fileInput.files[0]);
+            } else if (pasteText) {
+                const lines = pasteText.split('\n');
+                for (let line of lines) {
+                    const name = line.trim();
+                    if (!name) continue;
+                    await dbAdd('students', {
+                        id: crypto.randomUUID(),
+                        classId: currentClassId,
+                        name: name,
+                        code: 'HV' + Math.floor(100 + Math.random() * 900),
+                        gender: 'Nam',
+                        dob: '',
+                        phone: ''
+                    });
+                    importedCount++;
+                }
+                closeModal('importExcelModal');
+                await renderStudentsTable();
+                await loadDashboardData();
+                showToast(`Đã thêm thành công ${importedCount} học viên từ văn bản!`, "success");
+            } else {
+                showToast("Vui lòng chọn file Excel hoặc dán danh sách học viên.", "error");
+            }
+        }
+
+        function openAddStudentModal() {
+            document.getElementById('modalStudentId').value = "";
+            document.getElementById('modalStudentName').value = "";
+            document.getElementById('modalStudentCode').value = "HV" + Math.floor(100 + Math.random() * 900);
+            openModal('studentModal');
+        }
+
+        async function saveStudentFromModal() {
+            const id = document.getElementById('modalStudentId').value;
+            const name = document.getElementById('modalStudentName').value.trim();
+            const code = document.getElementById('modalStudentCode').value.trim();
+            const gender = document.getElementById('modalStudentGender').value;
+
+            if (!name || !code) {
+                showToast("Vui lòng nhập họ tên và mã học viên.", "error");
+                return;
+            }
+
+            await dbAdd('students', {
+                id: id || crypto.randomUUID(),
+                classId: currentClassId,
+                name, code, gender
+            });
+            closeModal('studentModal');
+            renderStudentsTable();
+            loadDashboardData();
+            showToast("Lưu học viên thành công!", "success");
+        }
+
+        async function deleteStudent(id) {
+            showConfirmModal("Xóa học viên", "Bạn có chắc muốn xóa học viên này?", async () => {
+                await dbDelete('students', id);
+                renderStudentsTable();
+                loadDashboardData();
+                showToast("Đã xóa học viên.", "success");
+            });
+        }
+
+        function loadAttendanceForDate() {
+            renderAttendanceTable();
+        }
+
+        async function renderAttendanceTable() {
+            const datepicker = document.getElementById('attendanceDatepicker');
+            if (!datepicker.value) datepicker.value = new Date().toISOString().split('T')[0];
+            const date = datepicker.value;
+            const students = (await dbGetAll('students')).filter(s => s.classId === currentClassId);
+            const allAttendance = await dbGetAll('attendance');
+
+            document.getElementById('attendanceTableBody').innerHTML = students.map((s, idx) => {
+                const rec = allAttendance.find(a => a.classId === currentClassId && a.studentId === s.id && a.date === date) || { status: 'present', note: '' };
+                return `<tr class="border-b border-slate-100">
+                    <td class="p-4">${idx + 1}</td>
+                    <td class="p-4 font-bold">${s.name}</td>
+                    <td class="p-4 font-mono">${s.code}</td>
+                    <td class="p-4 text-center">
+                        <select onchange="updateAttendance('${s.id}', this.value)" class="px-3 py-1 rounded-xl text-xs font-bold ${rec.status === 'present' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}">
+                            <option value="present" ${rec.status === 'present' ? 'selected' : ''}>🟢 Có mặt</option>
+                            <option value="absent" ${rec.status === 'absent' ? 'selected' : ''}>🔴 Vắng</option>
+                        </select>
+                    </td>
+                    <td class="p-4"><input type="text" value="${rec.note || ''}" onchange="updateAttendanceNote('${s.id}', this.value)" class="w-full px-2 py-1 text-xs border rounded-lg"></td>
+                </tr>`;
+            }).join('') || `<tr><td colspan="5" class="p-6 text-center text-slate-400">Chưa có học viên để điểm danh.</td></tr>`;
+        }
+
+        async function updateAttendance(studentId, status) {
+            const date = document.getElementById('attendanceDatepicker').value;
+            const allAttendance = await dbGetAll('attendance');
+            let rec = allAttendance.find(a => a.classId === currentClassId && a.studentId === studentId && a.date === date);
+            if (!rec) rec = { id: crypto.randomUUID(), classId: currentClassId, studentId, date, status, note: '' };
+            else rec.status = status;
+            await dbAdd('attendance', rec);
+            showToast("Đã cập nhật điểm danh", "success");
+        }
+
+        async function updateAttendanceNote(studentId, note) {
+            const date = document.getElementById('attendanceDatepicker').value;
+            const allAttendance = await dbGetAll('attendance');
+            let rec = allAttendance.find(a => a.classId === currentClassId && a.studentId === studentId && a.date === date);
+            if (!rec) rec = { id: crypto.randomUUID(), classId: currentClassId, studentId, date, status: 'present', note };
+            else rec.note = note;
+            await dbAdd('attendance', rec);
+        }
+
+        async function markAllPresent() {
+            const date = document.getElementById('attendanceDatepicker').value;
+            const students = (await dbGetAll('students')).filter(s => s.classId === currentClassId);
+            for (let s of students) {
+                const allAttendance = await dbGetAll('attendance');
+                let rec = allAttendance.find(a => a.classId === currentClassId && a.studentId === s.id && a.date === date);
+                if (!rec) rec = { id: crypto.randomUUID(), classId: currentClassId, studentId: s.id, date, status: 'present', note: '' };
+                else rec.status = 'present';
+                await dbAdd('attendance', rec);
+            }
+            renderAttendanceTable();
+            showToast("Đã điểm danh tất cả!", "success");
+        }
+
+        async function handleWordExamUpload(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    const arrayBuffer = e.target.result;
+                    const result = await mammoth.convertToHtml({ arrayBuffer: arrayBuffer });
+                    const html = result.value;
+                    
+                    const questions = parseAzotaHtmlWithUnderline(html);
+                    if (questions.length === 0) {
+                        showToast("Không tìm thấy câu hỏi hợp lệ trong file Word.", "error");
+                        return;
+                    }
+
+                    document.getElementById('examQuestionsRawInput').value = JSON.stringify(questions, null, 2);
+                    if (!document.getElementById('examTitleInput').value) {
+                        document.getElementById('examTitleInput').value = file.name.replace(/\.[^/.]+$/, "");
+                    }
+
+                    showToast(`Nhận diện thành công ${questions.length} câu hỏi và đáp án đúng!`, "success");
+                } catch (err) {
+                    console.error(err);
+                    showToast("Lỗi khi đọc file Word (.docx).", "error");
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function parseAzotaHtmlWithUnderline(html) {
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = html;
+
+            const paragraphs = Array.from(tempDiv.querySelectorAll('p, li, div'));
+            const questions = [];
+            let currentQuestion = null;
+            let currentOptions = [];
+            let correctOptionIndex = 0;
+
+            const questionRegex = /^(câu\s*\d+[:\.])/i;
+
+            paragraphs.forEach(p => {
+                const rawText = p.textContent.trim();
+                if (!rawText) return;
+
+                if (questionRegex.test(rawText)) {
+                    if (currentQuestion) {
+                        questions.push({
+                            question: currentQuestion,
+                            options: currentOptions.length >= 2 ? currentOptions : ["A. ...", "B. ...", "C. ...", "D. ..."],
+                            correct: correctOptionIndex
+                        });
+                    }
+                    currentQuestion = rawText.replace(questionRegex, '').trim();
+                    currentOptions = [];
+                    correctOptionIndex = 0;
+                } else {
+                    if (/[A-D][\.\)]/i.test(rawText)) {
+                        const hasUnderline = p.querySelector('u') !== null || 
+                                             p.querySelector('ins') !== null ||
+                                             /text-decoration\s*:\s*underline/i.test(p.innerHTML);
+
+                        let parts = rawText.split(/(?=[A-D][\.\)])/);
+                        parts.forEach(part => {
+                            const match = part.match(/^([A-D])[\.\)]\s*(.*)/i);
+                            if (match) {
+                                const letter = match[1].toUpperCase();
+                                const idx = letter.charCodeAt(0) - 65;
+                                const optText = part.trim();
+
+                                if (hasUnderline) {
+                                    correctOptionIndex = idx >= 0 && idx < 4 ? idx : correctOptionIndex;
+                                }
+
+                                if (idx >= 0 && idx < 4) {
+                                    currentOptions[idx] = optText;
+                                }
+                            }
+                        });
+                    } else if (currentQuestion && currentOptions.length === 0) {
+                        currentQuestion += " " + rawText;
+                    } else if (currentOptions.length > 0) {
+                        currentOptions[currentOptions.length - 1] += " " + rawText;
+                    }
+                }
+            });
+
+            if (currentQuestion) {
+                questions.push({
+                    question: currentQuestion,
+                    options: currentOptions.length >= 2 ? currentOptions : ["A. ...", "B. ...", "C. ...", "D. ..."],
+                    correct: correctOptionIndex
+                });
+            }
+
+            return questions;
+        }
+
+        async function renderExamsGrid() {
+            const exams = await dbGetAll('exams');
+            document.getElementById('examsGridContainer').innerHTML = exams.map(e => `
+                <div class="bg-white p-5 rounded-2xl border border-pastel-100 shadow-sm flex flex-col justify-between space-y-4">
+                    <div>
+                        <span class="bg-pastel-100 text-pastel-800 text-xs font-bold px-2.5 py-1 rounded-full">${e.topic}</span>
+                        <h3 class="font-bold text-slate-900 text-base mt-3">${e.title}</h3>
+                        <p class="text-xs text-slate-500 mt-1">Thời lượng: ${e.duration} phút | ${e.questions ? e.questions.length : 0} câu hỏi</p>
+                    </div>
+                    <div class="flex justify-between items-center pt-3 border-t border-slate-100">
+                        <div class="flex space-x-2">
+                            <button onclick="viewExamDetails('${e.id}')" class="bg-sky-100 text-sky-700 hover:bg-sky-200 px-3 py-2 rounded-xl text-xs font-bold transition flex items-center">
+                                <i class="fa-solid fa-eye mr-1"></i>Xem đề
+                            </button>
+                            <button onclick="openAssignExamModalWithId('${e.id}')" class="bg-pastel-600 hover:bg-pastel-700 text-white px-3 py-2 rounded-xl text-xs font-bold shadow transition flex items-center">
+                                <i class="fa-solid fa-paper-plane mr-1"></i>Giao đề
+                            </button>
+                        </div>
+                        <button onclick="deleteExam('${e.id}')" class="text-slate-400 hover:text-rose-600 transition text-sm p-2"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                </div>
+            `).join('') || '<div class="col-span-3 text-center py-8 text-slate-400 text-sm">Chưa có đề thi nào.</div>';
+        }
+
+        async function viewExamDetails(examId) {
+            const exams = await dbGetAll('exams');
+            const exam = exams.find(e => e.id === examId);
+            if (!exam) return;
+
+            document.getElementById('viewExamTitle').innerText = exam.title;
+            document.getElementById('viewExamTopicBadge').innerText = exam.topic || 'Chủ đề';
+            
+            document.getElementById('viewExamQuestionsContainer').innerHTML = (exam.questions || []).map((q, idx) => `
+                <div class="bg-pastel-50/50 p-4 rounded-xl border border-pastel-100 space-y-2">
+                    <h4 class="font-bold text-slate-900 text-sm">Câu ${idx + 1}: ${q.question}</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+                        ${q.options.map((opt, optIdx) => `
+                            <div class="p-2.5 rounded-lg border ${optIdx === q.correct ? 'bg-emerald-50 border-emerald-300 text-emerald-800 font-bold shadow-sm' : 'bg-white border-slate-200 text-slate-700'}">
+                                ${opt}${optIdx === q.correct ? '<i class="fa-solid fa-circle-check text-emerald-600 ml-1"></i> (Đáp án đúng)' : ''}
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+
+            openModal('viewExamModal');
+        }
+
+        function openCreateExamModal() {
+            document.getElementById('examTitleInput').value = "";
+            document.getElementById('examQuestionsRawInput').value = "";
+            document.getElementById('wordExamFileInput').value = "";
+            openModal('createExamModal');
+        }
+
+        async function saveNewExam() {
+            const title = document.getElementById('examTitleInput').value.trim();
+            const topic = document.getElementById('examTopicInput').value.trim();
+            const duration = parseInt(document.getElementById('examDurationInput').value) || 45;
+            const rawQuestions = document.getElementById('examQuestionsRawInput').value.trim();
+
+            if (!title) {
+                showToast("Vui lòng nhập tên đề thi.", "error");
+                return;
+            }
+
+            let questions = [];
+            try {
+                questions = JSON.parse(rawQuestions);
+            } catch (e) {
+                showToast("Định dạng JSON câu hỏi không hợp lệ.", "error");
+                return;
+            }
+
+            await dbAdd('exams', {
+                id: crypto.randomUUID(),
+                title, topic, duration, questions,
+                createdAt: new Date().toISOString()
+            });
+
+            closeModal('createExamModal');
+            renderExamsGrid();
+            populateResultExamFilter();
+            showToast("Tạo đề thi thành công!", "success");
+        }
+
+        async function deleteExam(id) {
+            showConfirmModal("Xóa đề thi", "Bạn có chắc muốn xóa đề thi này?", async () => {
+                await dbDelete('exams', id);
+                renderExamsGrid();
+                populateResultExamFilter();
+                showToast("Đã xóa đề thi.", "success");
+            });
+        }
+
+        async function renderQuestionsList() {}
+
+        async function renderAssignmentsGrid() {
+            const assignments = (await dbGetAll('assignments')).filter(a => a.classId === currentClassId);
+            const exams = await dbGetAll('exams');
+            const students = (await dbGetAll('students')).filter(s => s.classId === currentClassId);
+            const attempts = (await dbGetAll('attempts')).filter(a => a.classId === currentClassId);
+
+            document.getElementById('assignmentsGridContainer').innerHTML = assignments.map(asg => {
+                const exam = exams.find(e => e.id === asg.examId);
+                const doneCount = students.filter(st => attempts.some(att => att.studentId === st.id && att.examId === asg.examId)).length;
+                return `
+                    <div class="bg-white p-5 rounded-2xl border border-pastel-100 shadow-sm space-y-4">
+                        <div>
+                            <span class="bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-1 rounded-full">Đang giao</span>
+                            <h3 class="font-bold text-slate-900 text-base mt-2">${exam ? exam.title : 'Đề thi'}</h3>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3 bg-pastel-50 p-3 rounded-xl text-center">
+                            <div><p class="text-xs text-slate-500">Đã làm</p><h4 class="font-bold text-lg text-emerald-600">${doneCount}/${students.length}</h4></div>
+                            <div><p class="text-xs text-slate-500">Chưa làm</p><h4 class="font-bold text-lg text-rose-600">${students.length - doneCount}</h4></div>
+                        </div>
+                    </div>
+                `;
+            }).join('') || '<div class="col-span-2 text-center py-8 text-slate-400 text-sm">Chưa có đề thi được giao.</div>';
+        }
+
+        async function openAssignExamModal() {
+            const exams = await dbGetAll('exams');
+            document.getElementById('assignExamSelect').innerHTML = exams.map(e => `<option value="${e.id}">${e.title}</option>`).join('');
+            openModal('assignExamModal');
+        }
+
+        async function openAssignExamModalWithId(examId) {
+            await openAssignExamModal();
+            document.getElementById('assignExamSelect').value = examId;
+        }
+
+        async function saveExamAssignment() {
+            const examId = document.getElementById('assignExamSelect').value;
+            const deadline = document.getElementById('assignDeadlineInput').value || new Date(Date.now() + 7*24*3600*1000).toISOString();
+            if (!examId) return;
+
+            await dbAdd('assignments', {
+                id: crypto.randomUUID(),
+                classId: currentClassId,
+                examId, deadline
+            });
+            closeModal('assignExamModal');
+            renderAssignmentsGrid();
+            showToast("Giao đề thành công!", "success");
+        }
+
+        async function onStudentPortalClassChange() {
+            const classId = document.getElementById('studentPortalClassSelect').value;
+            const students = (await dbGetAll('students')).filter(s => s.classId === classId);
+            document.getElementById('studentPortalStudentSelect').innerHTML = '<option value="">-- Chọn tên học viên --</option>' + 
+                students.map(s => `<option value="${s.id}">${s.name} (${s.code})</option>`).join('');
+        }
+
+        let currentActiveStudentId = null;
+        async function loadStudentAssignedExams() {
+            const classId = document.getElementById('studentPortalClassSelect').value;
+            const studentId = document.getElementById('studentPortalStudentSelect').value;
+            if (!classId || !studentId) {
+                showToast("Vui lòng chọn lớp và tên học viên.", "error");
+                return;
+            }
+            currentActiveStudentId = studentId;
+            document.getElementById('studentLoginCard').classList.add('hidden');
+            document.getElementById('studentExamsCard').classList.remove('hidden');
+
+            const assignments = (await dbGetAll('assignments')).filter(a => a.classId === classId);
+            const exams = await dbGetAll('exams');
+            const attempts = (await dbGetAll('attempts')).filter(a => a.studentId === studentId);
+
+            document.getElementById('studentExamListContainer').innerHTML = assignments.map(asg => {
+                const exam = exams.find(e => e.id === asg.examId);
+                const attempt = attempts.find(a => a.examId === asg.examId);
+                return `
+                    <div class="bg-pastel-50 p-4 rounded-xl border flex justify-between items-center">
+                        <div><h4 class="font-bold text-sm">${exam ? exam.title : 'Đề thi'}</h4></div>
+                        <div>
+                            ${attempt ? `<span class="bg-emerald-100 text-emerald-800 text-xs font-bold px-3 py-1.5 rounded-xl">Đã nộp (${attempt.score}đ)</span>` : 
+                            `<button onclick="startExam('${exam.id}')" class="bg-pastel-600 hover:bg-pastel-700 text-white px-4 py-2 rounded-xl text-xs font-bold">Làm bài</button>`}
+                        </div>
+                    </div>
+                `;
+            }).join('') || '<div class="text-center py-6 text-slate-400 text-sm">Chưa có đề thi được giao.</div>';
+        }
+
+        function resetStudentPortal() {
+            document.getElementById('studentExamsCard').classList.add('hidden');
+            document.getElementById('studentLoginCard').classList.remove('hidden');
+        }
+
+        async function startExam(examId) {
+            const exams = await dbGetAll('exams');
+            const exam = exams.find(e => e.id === examId);
+            if (!exam) return;
+
+            activeExamSession = {
+                examId,
+                studentId: currentActiveStudentId,
+                durationMinutes: exam.duration || 45,
+                answers: {},
+                questions: exam.questions || []
+            };
+
+            document.getElementById('studentExamsCard').classList.add('hidden');
+            document.getElementById('examTakingInterface').classList.remove('hidden');
+            document.getElementById('takingExamTitle').innerText = exam.title;
+
+            document.getElementById('takingQuestionsContainer').innerHTML = activeExamSession.questions.map((q, idx) => `
+                <div class="bg-pastel-50/50 p-5 rounded-2xl border space-y-3">
+                    <h4 class="font-bold text-sm">Câu ${idx + 1}: ${q.question}</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        ${q.options.map((opt, optIdx) => `
+                            <label onclick="selectAnswer(${idx},${optIdx})" class="flex items-center space-x-3 p-3 bg-white border rounded-xl cursor-pointer hover:border-pastel-500 text-xs">
+                                <input type="radio" name="q_${idx}" value="${optIdx}">
+                                <span>${opt}</span>
+                            </label>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+
+            document.getElementById('examPaletteContainer').innerHTML = activeExamSession.questions.map((q, idx) => `
+                <button id="paletteBtn_${idx}" class="w-9 h-9 rounded-xl font-bold text-xs bg-slate-200 text-slate-700">${idx + 1}</button>
+            `).join('');
+        }
+
+        function selectAnswer(qIdx, optIdx) {
+            activeExamSession.answers[qIdx] = optIdx;
+            document.getElementById(`paletteBtn_${qIdx}`).className = "w-9 h-9 rounded-xl font-bold text-xs bg-pastel-600 text-white";
+        }
+
+        function confirmSubmitExam() {
+            showConfirmModal("Nộp bài", "Bạn có chắc chắn muốn nộp bài?", () => submitExam());
+        }
+
+        async function submitExam() {
+            let correct = 0, wrong = 0, blank = 0;
+            activeExamSession.questions.forEach((q, idx) => {
+                const ans = activeExamSession.answers[idx];
+                if (ans === undefined) blank++;
+                else if (ans === q.correct) correct++;
+                else wrong++;
+            });
+
+            const score = parseFloat(((correct / activeExamSession.questions.length) * 10).toFixed(2));
+            const classId = document.getElementById('studentPortalClassSelect').value;
+
+            await dbAdd('attempts', {
+                id: `att_${activeExamSession.studentId}_${activeExamSession.examId}`,
+                classId,
+                studentId: activeExamSession.studentId,
+                examId: activeExamSession.examId,
+                answers: activeExamSession.answers,
+                score, correctCount: correct, wrongCount: wrong, blankCount: blank,
+                submittedAt: new Date().toISOString(),
+                status: 'submitted'
+            });
+
+            document.getElementById('examTakingInterface').classList.add('hidden');
+            document.getElementById('examResultReviewCard').classList.remove('hidden');
+            document.getElementById('reviewScoreVal').innerText = score;
+            document.getElementById('reviewCorrectVal').innerText = correct;
+            document.getElementById('reviewWrongVal').innerText = wrong;
+            document.getElementById('reviewBlankVal').innerText = blank;
+            loadDashboardData();
+            showToast("Nộp bài thành công!", "success");
+        }
+
+        function resetStudentPortalToExams() {
+            document.getElementById('examResultReviewCard').classList.add('hidden');
+            document.getElementById('studentExamsCard').classList.remove('hidden');
+            loadStudentAssignedExams();
+        }
+
+        async function populateResultExamFilter() {
+            const exams = await dbGetAll('exams');
+            const filterSelect = document.getElementById('resultExamFilter');
+            if (filterSelect) {
+                filterSelect.innerHTML = '<option value="">Tất cả bài thi</option>' + 
+                    exams.map(e => `<option value="${e.id}">${e.title}</option>`).join('');
+            }
+        }
+
+        async function renderResultsTable() {
+            const attempts = (await dbGetAll('attempts')).filter(a => a.classId === currentClassId && a.status === 'submitted');
+            const students = (await dbGetAll('students')).filter(s => s.classId === currentClassId);
+            const exams = await dbGetAll('exams');
+            const selectedExamId = document.getElementById('resultExamFilter').value;
+
+            const filteredAttempts = attempts.filter(att => !selectedExamId || att.examId === selectedExamId);
+
+            document.getElementById('resultsTableBody').innerHTML = filteredAttempts.map((att, idx) => {
+                const student = students.find(s => s.id === att.studentId);
+                const exam = exams.find(e => e.id === att.examId);
+                return `<tr class="border-b border-slate-100">
+                    <td class="p-4">${idx + 1}</td>
+                    <td class="p-4 font-bold">${student ? student.name : '---'}</td>
+                    <td class="p-4">${exam ? exam.title : '---'}</td>
+                    <td class="p-4 font-bold text-pastel-700">${att.score}</td>
+                    <td class="p-4"><span class="text-emerald-600 font-bold">${att.correctCount}</span> / <span class="text-rose-600 font-bold">${att.wrongCount}</span></td>
+                    <td class="p-4 text-xs">${new Date(att.submittedAt).toLocaleString('vi-VN')}</td>
+                    <td class="p-4 text-center"><button onclick="deleteAttempt('${att.id}')" class="text-rose-600"><i class="fa-solid fa-trash"></i></button></td>
+                </tr>`;
+            }).join('') || `<tr><td colspan="7" class="p-6 text-center text-slate-400">Chưa có kết quả.</td></tr>`;
+        }
+
+        async function deleteAttempt(id) {
+            await dbDelete('attempts', id);
+            renderResultsTable();
+            loadDashboardData();
+            showToast("Đã xóa kết quả.", "success");
+        }
+
+        async function renderRankingList() {
+            const students = (await dbGetAll('students')).filter(s => s.classId === currentClassId);
+            const attempts = (await dbGetAll('attempts')).filter(a => a.classId === currentClassId && a.status === 'submitted');
+
+            const ranked = students.map(s => {
+                const stAttempts = attempts.filter(a => a.studentId === s.id);
+                const avg = stAttempts.length > 0 ? stAttempts.reduce((sum, a) => sum + a.score, 0) / stAttempts.length : 0;
+                return { student: s, avg, count: stAttempts.length };
+            }).sort((a, b) => b.avg - a.avg);
+
+            document.getElementById('rankingListContainer').innerHTML = ranked.map((r, idx) => `
+                <div class="bg-white p-4 rounded-2xl border flex items-center justify-between">
+                    <div class="flex items-center space-x-4">
+                        <div class="w-10 h-10 rounded-xl bg-pastel-100 text-pastel-700 font-bold flex items-center justify-center">${idx + 1}</div>
+                        <div><h4 class="font-bold text-sm">${r.student.name}</h4><p class="text-xs text-slate-500">Đã làm: ${r.count} bài</p></div>
+                    </div>
+                    <span class="text-lg font-bold text-pastel-700">${r.avg.toFixed(1)}đ</span>
+                </div>
+            `).join('') || '<div class="text-center py-6 text-slate-400 text-sm">Chưa có dữ liệu xếp hạng.</div>';
+        }
+
+        async function renderPointsTable() {
+            const points = (await dbGetAll('points')).filter(p => p.classId === currentClassId);
+            const students = (await dbGetAll('students')).filter(s => s.classId === currentClassId);
+            document.getElementById('pointsTableBody').innerHTML = points.map(p => {
+                const s = students.find(st => st.id === p.studentId);
+                return `<tr class="border-b"><td class="p-4">${new Date(p.createdAt).toLocaleDateString()}</td><td class="p-4 font-bold">${s ? s.name : ''}</td><td class="p-4 text-center font-bold ${p.type === 'plus' ? 'text-emerald-600' : 'text-rose-600'}">${p.type === 'plus' ? '+' : '-'}${p.value}</td><td class="p-4">${p.reason}</td><td class="p-4 text-center"><button onclick="deletePoint('${p.id}')"><i class="fa-solid fa-trash text-rose-600"></i></button></td></tr>`;
+            }).join('') || `<tr><td colspan="5" class="p-6 text-center text-slate-400">Chưa có bản ghi điểm thi đua.</td></tr>`;
+            document.getElementById('pointStudentSelect').innerHTML = students.map(s => `<option value="${s.id}">${s.name} (${s.code})</option>`).join('');
+        }
+
+        function openAddPointModal() { openModal('addPointModal'); }
+        async function savePointRecord() {
+            const studentId = document.getElementById('pointStudentSelect').value;
+            const value = parseFloat(document.getElementById('pointValueInput').value) || 1;
+            const type = document.getElementById('pointTypeSelect').value;
+            const reason = document.getElementById('pointReasonInput').value.trim();
+            if (!studentId || !reason) return;
+            await dbAdd('points', { id: crypto.randomUUID(), classId: currentClassId, studentId, value, type, reason, createdAt: new Date().toISOString() });
+            closeModal('addPointModal');
+            renderPointsTable();
+            showToast("Đã lưu điểm thi đua!", "success");
+        }
+        async function deletePoint(id) { await dbDelete('points', id); renderPointsTable(); showToast("Đã xóa.", "success"); }
+
+        async function renderTheoryGrid() {}
+        async function backupDataJSON() {
+            const data = {};
+            for (let store of STORES) {
+                data[store] = await dbGetAll(store);
+            }
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `backup_gdtx_${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            showToast("Sao lưu thành công!", "success");
+        }
+        function confirmResetDatabase() {
+            showConfirmModal("Xóa dữ liệu", "Bạn có chắc muốn xóa sạch dữ liệu?", async () => {
+                localStorage.clear();
+                location.reload();
+            });
+        }
+
+        async function openClassManagerModal() {
+            const classes = await dbGetAll('classes');
+            document.getElementById('classListModalContainer').innerHTML = classes.map(c => `
+                <div class="p-3 bg-pastel-50 border rounded-xl flex justify-between items-center">
+                    <div><h4 class="font-bold text-sm">${c.name}</h4><p class="text-xs text-slate-500">${c.year}</p></div>
+                    <button onclick="switchClass('${c.id}')" class="px-3 py-1.5 bg-pastel-600 text-white rounded-xl text-xs font-bold">Chọn lớp</button>
+                </div>
+            `).join('');
+            openModal('classManagerModal');
+        }
+
+        async function switchClass(id) {
+            currentClassId = id;
+            localStorage.setItem("currentClassId", id);
+            closeModal('classManagerModal');
+            await refreshCurrentClassUI();
+            showToast("Đã chuyển lớp!", "success");
+        }
+
+        function openAddClassModal() {
+            document.getElementById('newClassNameInput').value = "";
+            openModal('addClassModal');
+        }
+
+        async function saveNewClass() {
+            const name = document.getElementById('newClassNameInput').value.trim();
+            const year = document.getElementById('newClassYearInput').value.trim();
+            if (!name) {
+                showToast("Vui lòng nhập tên lớp.", "error");
+                return;
+            }
+            const newId = crypto.randomUUID();
+            await dbAdd('classes', {
+                id: newId,
+                name,
+                year: year || '2026 - 2027',
+                description: 'Trung tâm GDTX Xuyên Mộc'
+            });
+            closeModal('addClassModal');
+            closeModal('classManagerModal');
+            await switchClass(newId);
+            showToast("Thêm lớp mới thành công!", "success");
+        }
+
+        function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+        function openSettingsModal() { switchTab('settings'); }
+
+        function showConfirmModal(title, msg, onConfirm) {
+            document.getElementById('modalTitle').innerText = title;
+            document.getElementById('modalMessage').innerText = msg;
+            document.getElementById('modalCancelBtn').classList.remove('hidden');
+            document.getElementById('modalConfirmBtn').onclick = () => { closeModal('customModal'); onConfirm(); };
+            document.getElementById('modalCancelBtn').onclick = () => closeModal('customModal');
+            openModal('customModal');
+        }
+
+        function showToast(msg, type = 'success') {
+            const c = document.getElementById('toastContainer');
+            const t = document.createElement('div');
+            t.className = `px-4 py-3 rounded-xl shadow-lg text-white text-xs font-bold flex items-center space-x-2 ${type === 'success' ? 'bg-emerald-600' : 'bg-rose-600'}`;
+            t.innerHTML = `<i class="fa-solid fa-circle-check"></i><span>${msg}</span>`;
+            c.appendChild(t);
+            setTimeout(() => t.remove(), 3000);
+        }
+
+        window.onload = initApp;
+    </script>
+</body>
+</html>
