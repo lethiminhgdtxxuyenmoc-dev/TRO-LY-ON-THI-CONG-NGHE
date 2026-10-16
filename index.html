@@ -185,7 +185,7 @@
 
             <div class="p-3 border-t border-pastel-100 bg-pastel-50/50">
                 <div class="text-xs text-slate-500 text-center">
-                    <span class="font-semibold text-pastel-700">Storage:</span> <span id="storageModeIndicator">IndexedDB + LocalSync</span>
+                    <span class="font-semibold text-pastel-700">Storage:</span> <span id="storageModeIndicator">LocalStorage (Stable)</span>
                 </div>
             </div>
         </aside>
@@ -769,10 +769,7 @@
     </div>
 
     <script>
-        const DB_NAME = "GDTX_XuyenMoc_AgriDB";
-        const DB_VERSION = 1;
-        let db = null;
-
+        const STORAGE_PREFIX = "GDTX_XuyenMoc_";
         const STORES = ['classes', 'students', 'attendance', 'exams', 'questions', 'assignments', 'attempts', 'scores', 'points', 'theory'];
 
         let currentClassId = localStorage.getItem("currentClassId") || null;
@@ -781,108 +778,44 @@
         let scoreChart = null;
 
         function initDatabase() {
-            return new Promise((resolve, reject) => {
-                const request = indexedDB.open(DB_NAME, DB_VERSION);
-                request.onerror = (e) => reject(e.target.error);
-                request.onsuccess = (e) => { db = e.target.result; resolve(db); };
-                request.onupgradeneeded = (e) => {
-                    const database = e.target.result;
-                    STORES.forEach(storeName => {
-                        if (!database.objectStoreNames.contains(storeName)) {
-                            database.createObjectStore(storeName, { keyPath: 'id' });
-                        }
-                    });
-                };
-            });
+            return Promise.resolve(true);
         }
 
-        // ==========================================
-        // CƠ CHẾ ĐỒNG BỘ LOCALSTORAGE ĐỂ CHỐNG MẤT DỮ LIỆU
-        // ==========================================
-        async function saveAllToLocalStorage() {
-            try {
-                const backupData = {};
-                for (let storeName of STORES) {
-                    backupData[storeName] = await dbGetAllDirect(storeName);
-                }
-                localStorage.setItem("GDTX_AUTO_BACKUP", JSON.stringify(backupData));
-            } catch (e) {
-                console.error("LocalStorage backup error:", e);
-            }
-        }
-
-        async function restoreFromLocalStorageIfNeeded() {
-            try {
-                const raw = localStorage.getItem("GDTX_AUTO_BACKUP");
-                if (!raw) return;
-                const backupData = JSON.parse(raw);
-                
-                for (let storeName of STORES) {
-                    const existing = await dbGetAllDirect(storeName);
-                    if (existing.length === 0 && backupData[storeName] && backupData[storeName].length > 0) {
-                        for (let item of backupData[storeName]) {
-                            await new Promise((res, rej) => {
-                                const tx = db.transaction([storeName], "readwrite");
-                                const st = tx.objectStore(storeName);
-                                st.put(item);
-                                tx.oncomplete = () => res();
-                                tx.onerror = () => rej(tx.error);
-                            });
-                        }
-                    }
-                }
-            } catch (e) {
-                console.error("Restore error:", e);
-            }
-        }
-
-        function dbGetAllDirect(storeName) {
-            return new Promise((resolve, reject) => {
-                const transaction = db.transaction([storeName], "readonly");
-                const store = transaction.objectStore(storeName);
-                const request = store.getAll();
-                request.onsuccess = () => resolve(request.result);
-                request.onerror = (e) => reject(e.target.error);
-            });
-        }
-
-        async function dbAdd(storeName, data) {
-            return new Promise((resolve, reject) => {
-                const transaction = db.transaction([storeName], "readwrite");
-                const store = transaction.objectStore(storeName);
+        // --- HỆ THỐNG LƯU TRỮ LOCALSTORAGE HOÀN TOÀN ỔN ĐỊNH CHO GITHUB PAGES ---
+        function dbAdd(storeName, data) {
+            return new Promise((resolve) => {
                 if (!data.id) data.id = crypto.randomUUID();
-                const request = store.put(data);
-                request.onsuccess = async () => {
-                    await saveAllToLocalStorage(); // Tự động backup ngay sau khi thêm
-                    resolve(data.id);
-                };
-                request.onerror = (e) => reject(e.target.error);
+                let items = JSON.parse(localStorage.getItem(STORAGE_PREFIX + storeName) || "[]");
+                const index = items.findIndex(item => item.id === data.id);
+                if (index >= 0) {
+                    items[index] = data;
+                } else {
+                    items.push(data);
+                }
+                localStorage.setItem(STORAGE_PREFIX + storeName, JSON.stringify(items));
+                resolve(data.id);
             });
         }
 
-        async function dbGetAll(storeName) {
-            return await dbGetAllDirect(storeName);
+        function dbGetAll(storeName) {
+            return new Promise((resolve) => {
+                let items = JSON.parse(localStorage.getItem(STORAGE_PREFIX + storeName) || "[]");
+                resolve(items);
+            });
         }
 
-        async function dbDelete(storeName, id) {
-            return new Promise((resolve, reject) => {
-                const transaction = db.transaction([storeName], "readwrite");
-                const store = transaction.objectStore(storeName);
-                const request = store.delete(id);
-                request.onsuccess = async () => {
-                    await saveAllToLocalStorage(); // Tự động backup ngay sau khi xóa
-                    resolve(true);
-                };
-                request.onerror = (e) => reject(e.target.error);
+        function dbDelete(storeName, id) {
+            return new Promise((resolve) => {
+                let items = JSON.parse(localStorage.getItem(STORAGE_PREFIX + storeName) || "[]");
+                items = items.filter(item => item.id !== id);
+                localStorage.setItem(STORAGE_PREFIX + storeName, JSON.stringify(items));
+                resolve(true);
             });
         }
 
         async function initApp() {
             try {
-                await initDatabase();
-                await restoreFromLocalStorageIfNeeded(); // Khôi phục dữ liệu từ LocalStorage nếu IndexedDB bị trống
                 await seedInitialDataIfNeeded();
-                await saveAllToLocalStorage(); // Lưu đồng bộ ban đầu
                 await loadClassesList();
                 if (!currentClassId) {
                     const classes = await dbGetAll('classes');
@@ -1779,7 +1712,7 @@
             document.getElementById('modalTitle').innerText = title;
             document.getElementById('modalMessage').innerText = msg;
             document.getElementById('modalCancelBtn').classList.remove('hidden');
-            document.getElementById('modalConfirmBtn').onclick = () => { closeModal('customModal'); onConfirm(); };
+            document.getElementById('modalConfirmBtn'].onclick = () => { closeModal('customModal'); onConfirm(); };
             document.getElementById('modalCancelBtn').onclick = () => closeModal('customModal');
             openModal('customModal');
         }
@@ -1787,7 +1720,7 @@
         function showToast(msg, type = 'success') {
             const c = document.getElementById('toastContainer');
             const t = document.createElement('div');
-            t.className = `px-4 py-3 rounded-xl shadow-lg text-white text-xs font-bold flex items-center space-x-2 ${type === 'success' ? 'bg-emerald-600' : 'bg-rose-600'}`;
+            t.className = `px-4 py-3 rounded-lg shadow-lg text-white text-xs font-bold flex items-center space-x-2 ${type === 'success' ? 'bg-emerald-600' : 'bg-rose-600'}`;
             t.innerHTML = `<i class="fa-solid fa-circle-check"></i><span>${msg}</span>`;
             c.appendChild(t);
             setTimeout(() => t.remove(), 3000);
