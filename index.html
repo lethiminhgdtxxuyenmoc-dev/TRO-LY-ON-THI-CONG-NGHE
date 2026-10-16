@@ -16,6 +16,11 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.16/mammoth.browser.min.js"></script>
     <!-- Chart.js for statistics -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Firebase App & Firestore SDKs (Compat) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -185,7 +190,7 @@
 
             <div class="p-3 border-t border-pastel-100 bg-pastel-50/50">
                 <div class="text-xs text-slate-500 text-center">
-                    <span class="font-semibold text-pastel-700">Storage:</span> <span id="storageModeIndicator">LocalStorage (Stable)</span>
+                    <span class="font-semibold text-pastel-700">Storage:</span> <span id="storageModeIndicator">Firebase Cloud Sync</span>
                 </div>
             </div>
         </aside>
@@ -769,7 +774,23 @@
     </div>
 
     <script>
-        const STORAGE_PREFIX = "GDTX_XuyenMoc_";
+        // --- CẤU HÌNH FIREBASE CLOUD ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyC0QsfWspa8HdGDnE3cJKMYAmSgTQYyRrw",
+            authDomain: "gdtx-xuyen-moc.firebaseapp.com",
+            projectId: "gdtx-xuyen-moc",
+            storageBucket: "gdtx-xuyen-moc.firebasestorage.app",
+            messagingSenderId: "465876400362",
+            appId: "1:465876400362:web:e9944326fddd9e53167f93",
+            measurementId: "G-BHX851YPS4"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const fsDb = firebase.firestore();
+
+        const DB_NAME = "GDTX_XuyenMoc_AgriDB";
+        const DB_VERSION = 1;
+        let db = null;
+
         const STORES = ['classes', 'students', 'attendance', 'exams', 'questions', 'assignments', 'attempts', 'scores', 'points', 'theory'];
 
         let currentClassId = localStorage.getItem("currentClassId") || null;
@@ -778,43 +799,95 @@
         let scoreChart = null;
 
         function initDatabase() {
-            return Promise.resolve(true);
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+                request.onerror = (e) => reject(e.target.error);
+                request.onsuccess = (e) => { db = e.target.result; resolve(db); };
+                request.onupgradeneeded = (e) => {
+                    const database = e.target.result;
+                    STORES.forEach(storeName => {
+                        if (!database.objectStoreNames.contains(storeName)) {
+                            database.createObjectStore(storeName, { keyPath: 'id' });
+                        }
+                    });
+                };
+            });
         }
 
-        // --- HỆ THỐNG LƯU TRỮ LOCALSTORAGE HOÀN TOÀN ỔN ĐỊNH CHO GITHUB PAGES ---
-        function dbAdd(storeName, data) {
+        // ==========================================
+        // HỆ THỐNG ĐỒNG BỘ CLOUD FIRESTORE & LOCAL CACHE
+        // ==========================================
+        async function dbAdd(storeName, data) {
+            if (!data.id) data.id = crypto.randomUUID();
+            try {
+                // Lưu lên đám mây Firestore để đồng bộ đa thiết bị tức thời
+                await fsDb.collection(storeName).doc(data.id).set(data);
+            } catch (err) {
+                console.warn("Firestore save error:", err);
+            }
+            // Lưu vào IndexedDB cục bộ làm cache dự phòng
             return new Promise((resolve) => {
-                if (!data.id) data.id = crypto.randomUUID();
-                let items = JSON.parse(localStorage.getItem(STORAGE_PREFIX + storeName) || "[]");
-                const index = items.findIndex(item => item.id === data.id);
-                if (index >= 0) {
-                    items[index] = data;
-                } else {
-                    items.push(data);
+                if (!db) { resolve(data.id); return; }
+                const transaction = db.transaction([storeName], "readwrite");
+                const store = transaction.objectStore(storeName);
+                const request = store.put(data);
+                request.onsuccess = () => resolve(data.id);
+                request.onerror = () => resolve(data.id);
+            });
+        }
+
+        async function dbGetAll(storeName) {
+            let cloudData = [];
+            try {
+                const snapshot = await fsDb.collection(storeName).get();
+                snapshot.forEach(doc => {
+                    cloudData.push(doc.data());
+                });
+            } catch (err) {
+                console.warn("Firestore fetch error:", err);
+            }
+
+            if (cloudData.length > 0) {
+                if (db) {
+                    try {
+                        const tx = db.transaction([storeName], "readwrite");
+                        const store = tx.objectStore(storeName);
+                        cloudData.forEach(item => store.put(item));
+                    } catch (e) {}
                 }
-                localStorage.setItem(STORAGE_PREFIX + storeName, JSON.stringify(items));
-                resolve(data.id);
+                return cloudData;
+            }
+
+            // Fallback về IndexedDB nếu mất mạng
+            return new Promise((resolve) => {
+                if (!db) { resolve([]); return; }
+                const transaction = db.transaction([storeName], "readonly");
+                const store = transaction.objectStore(storeName);
+                const request = store.getAll();
+                request.onsuccess = () => resolve(request.result || []);
+                request.onerror = () => resolve([]);
             });
         }
 
-        function dbGetAll(storeName) {
+        async function dbDelete(storeName, id) {
+            try {
+                await fsDb.collection(storeName).doc(id).delete();
+            } catch (err) {
+                console.warn("Firestore delete error:", err);
+            }
             return new Promise((resolve) => {
-                let items = JSON.parse(localStorage.getItem(STORAGE_PREFIX + storeName) || "[]");
-                resolve(items);
-            });
-        }
-
-        function dbDelete(storeName, id) {
-            return new Promise((resolve) => {
-                let items = JSON.parse(localStorage.getItem(STORAGE_PREFIX + storeName) || "[]");
-                items = items.filter(item => item.id !== id);
-                localStorage.setItem(STORAGE_PREFIX + storeName, JSON.stringify(items));
-                resolve(true);
+                if (!db) { resolve(true); return; }
+                const transaction = db.transaction([storeName], "readwrite");
+                const store = transaction.objectStore(storeName);
+                const request = store.delete(id);
+                request.onsuccess = () => resolve(true);
+                request.onerror = () => resolve(true);
             });
         }
 
         async function initApp() {
             try {
+                await initDatabase();
                 await seedInitialDataIfNeeded();
                 await loadClassesList();
                 if (!currentClassId) {
@@ -838,7 +911,7 @@
                 await dbAdd('classes', {
                     id: defaultClassId,
                     name: 'Lớp 12B - Công nghệ Nông nghiệp',
-                    year: '2025 - 2026',
+                    year: '2026 - 2027',
                     description: 'Trung tâm GDTX Xuyên Mộc'
                 });
                 await dbAdd('students', {
@@ -1712,7 +1785,7 @@
             document.getElementById('modalTitle').innerText = title;
             document.getElementById('modalMessage').innerText = msg;
             document.getElementById('modalCancelBtn').classList.remove('hidden');
-            document.getElementById('modalConfirmBtn'].onclick = () => { closeModal('customModal'); onConfirm(); };
+            document.getElementById('modalConfirmBtn').onclick = () => { closeModal('customModal'); onConfirm(); };
             document.getElementById('modalCancelBtn').onclick = () => closeModal('customModal');
             openModal('customModal');
         }
@@ -1720,7 +1793,7 @@
         function showToast(msg, type = 'success') {
             const c = document.getElementById('toastContainer');
             const t = document.createElement('div');
-            t.className = `px-4 py-3 rounded-lg shadow-lg text-white text-xs font-bold flex items-center space-x-2 ${type === 'success' ? 'bg-emerald-600' : 'bg-rose-600'}`;
+            t.className = `px-4 py-3 rounded-xl shadow-lg text-white text-xs font-bold flex items-center space-x-2 ${type === 'success' ? 'bg-emerald-600' : 'bg-rose-600'}`;
             t.innerHTML = `<i class="fa-solid fa-circle-check"></i><span>${msg}</span>`;
             c.appendChild(t);
             setTimeout(() => t.remove(), 3000);
