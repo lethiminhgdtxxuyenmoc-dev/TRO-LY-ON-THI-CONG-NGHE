@@ -1958,7 +1958,7 @@
                     return `
                         <div class="bg-pastel-50/50 p-4 rounded-xl border border-pastel-100 space-y-2">
                             <div class="flex items-center space-x-2">
-                                <span class="bg-amber-100 text-amber-800 text-xs font-bold px-2 py-0.5 rounded-full">Đúng / Sai</span>
+                                <span class="bg-amber-100 text-amber-800 text-xs font-bold px-2.5 py-0.5 rounded-full">Đúng / Sai</span>
                                 ${levelBadge}
                                 <h4 class="font-bold text-slate-900 text-sm">Câu ${idx + 1}: ${q.question}</h4>
                             </div>
@@ -2184,7 +2184,6 @@
             document.getElementById('studentLoginCard').classList.remove('hidden');
         }
 
-        // --- KHẮC PHỤC LỖI ĐẢO ĐÁP ÁN VÀ NỘP BÀI THI ---
         async function startExam(examId, assignmentId) {
             const exams = await dbGetAll('exams');
             const exam = exams.find(e => e.id === examId);
@@ -2195,23 +2194,29 @@
 
             const assignments = await dbGetAll('assignments');
             const assignment = assignments.find(a => a.id === assignmentId);
-            const selectedClassId = document.getElementById('studentPortalClassSelect').value;
+            const classId = document.getElementById('studentPortalClassSelect').value;
 
             let displayQuestions = JSON.parse(JSON.stringify(exam.questions || []));
 
-            // ĐẢO ĐÁP ÁN: Tách triệt để nhãn A/B/C/D cũ, xáo trộn nội dung thuần túy, gán lại nhãn A/B/C/D mới
+            // XỬ LÝ ĐẢO ĐÁP ÁN CHUẨN XÁC (Tách nhãn cũ -> Xáo trộn -> Đánh lại nhãn mới A, B, C, D / a, b, c, d)
             if (assignment && assignment.shuffleOptions) {
                 displayQuestions.forEach(q => {
                     const qType = q.type || 'MCQ';
+                    
+                    // 1. Dạng Trắc nghiệm 4 lựa chọn (MCQ)
                     if ((qType === 'MCQ' || qType === 'PHẦN I') && q.options && q.options.length > 0) {
                         const rawCorrectText = q.options[q.correct] ? q.options[q.correct].replace(/^[A-D][\.\)]\s*/i, '').trim() : '';
                         const cleanOptions = q.options.map(opt => opt.replace(/^[A-D][\.\)]\s*/i, '').trim());
                         const shuffledClean = shuffleArray([...cleanOptions]);
+                        
                         const labels = ['A', 'B', 'C', 'D'];
                         q.options = shuffledClean.map((text, idx) => `${labels[idx]}. ${text}`);
+                        
                         const newCorrectIdx = shuffledClean.findIndex(text => text === rawCorrectText);
                         q.correct = newCorrectIdx !== -1 ? newCorrectIdx : 0;
-                    } else if ((qType === 'TF' || qType === 'PHẦN II') && q.items && q.items.length > 0) {
+                    } 
+                    // 2. Dạng Đúng / Sai (TF)
+                    else if ((qType === 'TF' || qType === 'PHẦN II') && q.items && q.items.length > 0) {
                         const labels = ['a', 'b', 'c', 'd'];
                         const cleanItems = q.items.map(item => ({
                             text: item.text.replace(/^[a-d1-4][\.\)]\s*/i, '').trim(),
@@ -2227,7 +2232,7 @@
                 });
             }
 
-            // ĐẢO CÂU HỎI
+            // XỬ LÝ ĐẢO CÂU HỎI
             if (assignment && assignment.shuffleQuestions) {
                 const mcqList = displayQuestions.filter(q => (q.type || 'MCQ') === 'MCQ' || q.type === 'PHẦN I');
                 const tfList = displayQuestions.filter(q => q.type === 'TF' || q.type === 'PHẦN II' || (q.items && q.items.length > 0));
@@ -2240,11 +2245,11 @@
                 ];
             }
 
-            // Lưu classId an toàn vào phiên làm bài để tránh lỗi nút Nộp bài khi DOM bị ẩn
+            // LƯU SẴN CLASSID VÀO PHIÊN LÀM BÀI ĐỂ KHÔNG BỊ BẤT THƯỜNG KHI NỘP BÀI
             activeExamSession = {
                 examId,
                 assignmentId,
-                classId: selectedClassId || currentClassId,
+                classId: classId || currentClassId,
                 studentId: currentActiveStudentId,
                 durationMinutes: exam.duration || 45,
                 answers: {},
@@ -2567,11 +2572,13 @@
             });
 
             const finalScore = parseFloat(Math.min(10, Math.max(0, totalScore)).toFixed(2));
-            const targetClassId = activeExamSession.classId || currentClassId;
+            
+            // LẤY TRỰC TIẾP CLASSID TỪ ACTIVEEXAMSESSION ĐÃ ĐƯỢC LƯU AN TOÀN
+            const classId = activeExamSession.classId || currentClassId;
 
             await dbAdd('attempts', {
                 id: `att_${activeExamSession.studentId}_${activeExamSession.examId}_${Date.now()}`,
-                classId: targetClassId,
+                classId,
                 studentId: activeExamSession.studentId,
                 examId: activeExamSession.examId,
                 assignmentId: activeExamSession.assignmentId,
