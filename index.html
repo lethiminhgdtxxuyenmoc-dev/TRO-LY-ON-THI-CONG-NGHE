@@ -387,7 +387,7 @@
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-4 rounded-2xl border border-pastel-100 shadow-sm">
                     <div>
                         <h2 class="text-lg font-bold text-slate-900">Kho Đề Thi & Tạo Đề</h2>
-                        <p class="text-xs text-slate-500">Soạn thảo và quản lý đề thi (Hỗ trợ Trắc nghiệm 4 lựa chọn, Đúng/Sai, Trả lời ngắn).</p>
+                        <p class="text-xs text-slate-500">Soạn thảo và quản lý đề thi (Chuẩn cấu trúc: Trắc nghiệm nhiều lựa chọn & Đúng/Sai).</p>
                     </div>
                     <button onclick="openCreateExamModal()" class="bg-pastel-600 hover:bg-pastel-700 text-white px-4 py-2 rounded-xl font-bold text-xs shadow transition flex items-center">
                         <i class="fa-solid fa-plus mr-2"></i>Tạo đề thi mới
@@ -400,7 +400,7 @@
             <div id="tab-questions" class="tab-content flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 space-y-6 hidden">
                 <div class="bg-white p-4 rounded-2xl border border-pastel-100 shadow-sm">
                     <h2 class="text-lg font-bold text-slate-900">Ngân hàng Câu hỏi Ôn tập</h2>
-                    <p class="text-xs text-slate-500">Lưu trữ câu hỏi trắc nghiệm.</p>
+                    <p class="text-xs text-slate-500">Lưu trữ câu hỏi trắc nghiệm Công nghệ Nông nghiệp.</p>
                 </div>
                 <div id="questionsListContainer" class="space-y-4"></div>
             </div>
@@ -522,7 +522,7 @@
                 </div>
             </div>
 
-            <!-- STUDENT EXAM PORTAL VIEW (TỐI ƯU CỰC KỲ GỌN DÀNH CHO ĐIỆN THOẠI) -->
+            <!-- STUDENT EXAM PORTAL VIEW (TỐI ƯU GỌN GÀNG CHO ĐIỆN THOẠI) -->
             <div id="studentPortalContainer" class="fixed inset-0 bg-slate-50 z-50 flex flex-col overflow-y-auto custom-scrollbar hidden">
                 <!-- TOP BAR DÀNH RIÊNG CHO HỌC VIÊN -->
                 <div class="bg-white border-b border-pastel-200 px-4 py-3 flex items-center justify-between shadow-sm shrink-0">
@@ -1005,7 +1005,6 @@
                     }
                 }
 
-                // TỰ ĐỘNG CHUYỂN SANG HỌC VIÊN NẾU CÓ THAM SỐ ?mode=student TRÊN URL
                 const urlParams = new URLSearchParams(window.location.search);
                 if (urlParams.get('mode') === 'student' || urlParams.get('role') === 'student') {
                     forceSwitchMode('student');
@@ -1083,7 +1082,6 @@
             if (targetBtn) targetBtn.classList.add('bg-pastel-100', 'text-pastel-700', 'font-bold');
         }
 
-        // CHUYỂN CHẾ ĐỘ CÓ XÁC THỰC MẬT KHẨU
         function switchAppMode(mode) {
             if (mode === 'teacher' && currentAppMode === 'student') {
                 document.getElementById('teacherPasswordInput').value = "";
@@ -1117,13 +1115,13 @@
             const btnStudent = document.getElementById('modeStudentBtn');
 
             if (mode === 'student') {
-                if (mainHeader) mainHeader.classList.add('hidden'); // ẨN SẠCH HEADER ỨNG DỤNG
+                if (mainHeader) mainHeader.classList.add('hidden');
                 studentPortal.classList.remove('hidden');
                 btnStudent.className = "px-3 py-1 rounded-lg text-xs font-semibold transition bg-white text-pastel-700 shadow-sm";
                 btnTeacher.className = "px-3 py-1 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition";
                 loadClassesList();
             } else {
-                if (mainHeader) mainHeader.classList.remove('hidden'); // HIỆN LẠI HEADER KHI VÀO QUYỀN GIÁO VIÊN
+                if (mainHeader) mainHeader.classList.remove('hidden');
                 studentPortal.classList.add('hidden');
                 btnTeacher.className = "px-3 py-1 rounded-lg text-xs font-semibold transition bg-white text-pastel-700 shadow-sm";
                 btnStudent.className = "px-3 py-1 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition";
@@ -1413,7 +1411,7 @@
         function downloadSampleWordDoc() {
             const htmlContent = `
             <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
-            <head><meta charset='utf-8'><title>Đề thi mẫu THPT GDTX Xuyên Mộc</title></head>
+            <head><meta charset='utf-8'><title>Đề thi mẫu Công nghệ Nông nghiệp</title></head>
             <body>
             <h2>PHẦN I. TRẮC NGHIỆM NHIỀU LỰA CHỌN</h2>
             <p><b>Câu 1:</b> Môn Công nghệ Nông nghiệp thuộc lĩnh vực sản xuất nào sau đây?</p>
@@ -1428,10 +1426,6 @@
             <p>b) Gia tăng ô nhiễm môi trường đất và nguồn nước. (<u>Sai</u>)</p>
             <p>c) Tiết kiệm chi phí nhân công và nguyên liệu sản xuất. (<u>Đúng</u>)</p>
             <p>d) Giảm sự phụ thuộc vào các điều kiện thời tiết. (<u>Đúng</u>)</p>
-
-            <h2>PHẦN III. TRẢ LỜI NGẮN</h2>
-            <p><b>Câu 3:</b> pH của đất thích hợp cho phần lớn cây trồng nông nghiệp nằm trong khoảng từ 5,5 đến bao nhiêu?</p>
-            <p>Đáp án: <u>6.5</u></p>
             </body>
             </html>`;
 
@@ -1516,10 +1510,6 @@
                     currentPart = "TF";
                     return;
                 }
-                if (upperText.includes("PHẦN III") || upperText.includes("TRẢ LỜI NGẮN")) {
-                    currentPart = "SHORT";
-                    return;
-                }
 
                 if (qHeaderRegex.test(rawText)) {
                     if (currentQuestion) {
@@ -1533,14 +1523,8 @@
                         question: stemText,
                         options: [],
                         items: [],
-                        correct: 0,
-                        correctAnswer: ''
+                        correct: 0
                     };
-
-                    const uTag = el.querySelector('u, ins');
-                    if (uTag && currentPart === 'SHORT') {
-                        currentQuestion.correctAnswer = uTag.textContent.trim();
-                    }
                     return;
                 }
 
@@ -1633,15 +1617,6 @@
                             } else if (currentQuestion.options.length === 0) {
                                 currentQuestion.question += " " + rawText;
                             }
-                        }
-                    } else if (currentQuestion.type === 'SHORT') {
-                        if (hasUnderlineTag) {
-                            const uTag = el.querySelector('u, ins');
-                            if (uTag) currentQuestion.correctAnswer = uTag.textContent.trim();
-                        } else if (rawText.toLowerCase().includes("đáp án:")) {
-                            currentQuestion.correctAnswer = rawText.split(":")[1].trim();
-                        } else {
-                            currentQuestion.question += " " + rawText;
                         }
                     }
                 }
@@ -1749,13 +1724,6 @@
                             `).join('')}
                         </div>
                     `;
-                } else if (qType === 'SHORT') {
-                    editorBody = `
-                        <div class="mt-2">
-                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Đáp án đúng chuẩn:</label>
-                            <input type="text" value="${q.correctAnswer || ''}" oninput="updateShortAnswerText(${qIdx}, this.value)" placeholder="Ví dụ: 6.5" class="w-full px-3 py-1.5 bg-emerald-50 border border-emerald-300 text-emerald-800 rounded-xl text-xs font-bold focus:outline-none">
-                        </div>
-                    `;
                 }
 
                 return `
@@ -1766,7 +1734,6 @@
                                 <select onchange="updateQuestionType(${qIdx}, this.value)" class="text-xs font-bold bg-white border border-slate-200 rounded-lg px-2 py-1 focus:outline-none">
                                     <option value="MCQ" ${qType === 'MCQ' ? 'selected' : ''}>Trắc nghiệm (4 phương án)</option>
                                     <option value="TF" ${qType === 'TF' ? 'selected' : ''}>Đúng / Sai</option>
-                                    <option value="SHORT" ${qType === 'SHORT' ? 'selected' : ''}>Trả lời ngắn</option>
                                 </select>
                             </div>
 
@@ -1823,8 +1790,6 @@
                     { label: 'c', text: 'c) Ý c', correct: true },
                     { label: 'd', text: 'd) Ý d', correct: false }
                 ];
-            } else if (newType === 'SHORT' && !q.correctAnswer) {
-                q.correctAnswer = '';
             }
             renderVisualQuestionEditor();
             syncVisualToJson();
@@ -1860,11 +1825,6 @@
             const current = currentEditingQuestions[qIdx].items[itemIdx].correct;
             currentEditingQuestions[qIdx].items[itemIdx].correct = !current;
             renderVisualQuestionEditor();
-            syncVisualToJson();
-        }
-
-        function updateShortAnswerText(qIdx, text) {
-            currentEditingQuestions[qIdx].correctAnswer = text;
             syncVisualToJson();
         }
 
@@ -1971,19 +1931,6 @@
                                         </span>
                                     </div>
                                 `).join('')}
-                            </div>
-                        </div>
-                    `;
-                } else if (qType === 'SHORT') {
-                    return `
-                        <div class="bg-pastel-50/50 p-4 rounded-xl border border-pastel-100 space-y-2">
-                            <div class="flex items-center space-x-2">
-                                <span class="bg-purple-100 text-purple-800 text-xs font-bold px-2.5 py-0.5 rounded-full">Trả lời ngắn</span>
-                                ${levelBadge}
-                            </div>
-                            <h4 class="font-bold text-slate-900 text-sm">Câu ${idx + 1}: ${q.question}</h4>
-                            <div class="p-2.5 rounded-lg border bg-emerald-50 border-emerald-300 text-emerald-800 font-bold text-xs">
-                                Đáp án đúng: ${q.correctAnswer || '---'}
                             </div>
                         </div>
                     `;
@@ -2198,12 +2145,10 @@
 
             let displayQuestions = JSON.parse(JSON.stringify(exam.questions || []));
 
-            // XỬ LÝ ĐẢO ĐÁP ÁN CHUẨN XÁC (Tách nhãn cũ -> Xáo trộn -> Đánh lại nhãn mới A, B, C, D / a, b, c, d)
             if (assignment && assignment.shuffleOptions) {
                 displayQuestions.forEach(q => {
                     const qType = q.type || 'MCQ';
                     
-                    // 1. Dạng Trắc nghiệm 4 lựa chọn (MCQ)
                     if ((qType === 'MCQ' || qType === 'PHẦN I') && q.options && q.options.length > 0) {
                         const rawCorrectText = q.options[q.correct] ? q.options[q.correct].replace(/^[A-D][\.\)]\s*/i, '').trim() : '';
                         const cleanOptions = q.options.map(opt => opt.replace(/^[A-D][\.\)]\s*/i, '').trim());
@@ -2215,7 +2160,6 @@
                         const newCorrectIdx = shuffledClean.findIndex(text => text === rawCorrectText);
                         q.correct = newCorrectIdx !== -1 ? newCorrectIdx : 0;
                     } 
-                    // 2. Dạng Đúng / Sai (TF)
                     else if ((qType === 'TF' || qType === 'PHẦN II') && q.items && q.items.length > 0) {
                         const labels = ['a', 'b', 'c', 'd'];
                         const cleanItems = q.items.map(item => ({
@@ -2232,20 +2176,16 @@
                 });
             }
 
-            // XỬ LÝ ĐẢO CÂU HỎI
             if (assignment && assignment.shuffleQuestions) {
                 const mcqList = displayQuestions.filter(q => (q.type || 'MCQ') === 'MCQ' || q.type === 'PHẦN I');
                 const tfList = displayQuestions.filter(q => q.type === 'TF' || q.type === 'PHẦN II' || (q.items && q.items.length > 0));
-                const shortList = displayQuestions.filter(q => q.type === 'SHORT' || q.type === 'PHẦN III');
 
                 displayQuestions = [
                     ...shuffleArray(mcqList),
-                    ...shuffleArray(tfList),
-                    ...shuffleArray(shortList)
+                    ...shuffleArray(tfList)
                 ];
             }
 
-            // LƯU SẴN CLASSID VÀO PHIÊN LÀM BÀI ĐỂ KHÔNG BỊ BẤT THƯỜNG KHI NỘP BÀI
             activeExamSession = {
                 examId,
                 assignmentId,
@@ -2283,18 +2223,6 @@
                                         </div>
                                     </div>
                                 `).join('')}
-                            </div>
-                        </div>
-                    `;
-                } else if (qType === 'SHORT' || qType === 'PHẦN III') {
-                    return `
-                        <div class="bg-pastel-50/70 p-4 rounded-2xl border border-pastel-200 space-y-3" id="question_block_${idx}">
-                            <div class="flex items-center space-x-2">
-                                <span class="bg-purple-100 text-purple-800 text-[10px] font-bold px-2 py-0.5 rounded-full">Trả lời ngắn</span>
-                                <h4 class="font-bold text-sm text-slate-800">Câu ${idx + 1}: ${q.question}</h4>
-                            </div>
-                            <div>
-                                <input type="text" oninput="selectShortAnswer(${idx}, this.value)" placeholder="Nhập câu trả lời của bạn..." class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-pastel-500 font-medium">
                             </div>
                         </div>
                     `;
@@ -2385,20 +2313,6 @@
             }
         }
 
-        function selectShortAnswer(qIdx, val) {
-            if (!activeExamSession) return;
-            const textVal = val.trim();
-            if (textVal) {
-                activeExamSession.answers[qIdx] = textVal;
-                const paletteBtn = document.getElementById(`paletteBtn_${qIdx}`);
-                if (paletteBtn) paletteBtn.className = "w-8 h-8 rounded-lg font-bold text-xs bg-pastel-600 text-white shadow-sm transition";
-            } else {
-                delete activeExamSession.answers[qIdx];
-                const paletteBtn = document.getElementById(`paletteBtn_${qIdx}`);
-                if (paletteBtn) paletteBtn.className = "w-8 h-8 rounded-lg font-bold text-xs bg-slate-200 text-slate-700 transition";
-            }
-        }
-
         function confirmSubmitExam() {
             showConfirmModal("Nộp bài thi", "Bạn có chắc chắn muốn nộp bài làm này?", () => submitExam());
         }
@@ -2438,32 +2352,6 @@
                                         </div>
                                     `;
                                 }).join('')}
-                            </div>
-                        </div>
-                    `;
-                } else if (qType === 'SHORT' || qType === 'PHẦN III') {
-                    const given = (userAns || '').toString().trim();
-                    const target = (q.correctAnswer || '').toString().trim();
-                    const isCorrect = given.toLowerCase() === target.toLowerCase();
-
-                    return `
-                        <div class="bg-slate-50 p-3.5 rounded-xl border ${given === '' ? 'border-slate-300' : (isCorrect ? 'border-emerald-300 bg-emerald-50/40' : 'border-rose-300 bg-rose-50/40')} space-y-2">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center space-x-2">
-                                    <span class="bg-purple-100 text-purple-800 text-[10px] font-bold px-2 py-0.5 rounded-full">Trả lời ngắn</span>
-                                    <h5 class="font-bold text-sm text-slate-800">Câu ${idx + 1}: ${q.question}</h5>
-                                </div>
-                                <div>
-                                    ${given === '' ? '<span class="text-xs font-bold text-slate-500">(Chưa làm)</span>' : (isCorrect ? '<span class="text-xs font-bold text-emerald-600"><i class="fa-solid fa-check mr-1"></i>Đúng</span>' : '<span class="text-xs font-bold text-rose-600"><i class="fa-solid fa-xmark mr-1"></i>Sai</span>')}
-                                </div>
-                            </div>
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs pt-1">
-                                <div class="p-2 rounded-lg bg-white border border-slate-200">
-                                    <span class="text-slate-500">Bạn làm:</span> <strong class="${isCorrect ? 'text-emerald-700' : 'text-rose-700'}">${given || '---'}</strong>
-                                </div>
-                                <div class="p-2 rounded-lg bg-emerald-50 border border-emerald-200">
-                                    <span class="text-emerald-800">Đáp án chuẩn:</span> <strong class="text-emerald-800">${target || '---'}</strong>
-                                </div>
                             </div>
                         </div>
                     `;
@@ -2525,9 +2413,10 @@
                 const qType = q.type || 'MCQ';
                 const userAns = activeExamSession.answers[idx];
 
+                // 1. DẠNG ĐÚNG / SAI (PHẦN II)
                 if (qType === 'TF' || (q.items && q.items.length > 0)) {
                     const items = q.items || [];
-                    if (!userAns || typeof userAns !== 'object') {
+                    if (!userAns || typeof userAns !== 'object' || Object.keys(userAns).length === 0) {
                         blankCount++;
                     } else {
                         let correctItems = 0;
@@ -2536,33 +2425,25 @@
                                 correctItems++;
                             }
                         });
+
                         if (correctItems === items.length) {
                             correctCount++;
+                            totalScore += pointsPerQ; 
                         } else if (correctItems === 0) {
                             wrongCount++;
                         } else {
-                            correctCount += (correctItems / items.length);
-                        }
-                        const ratio = items.length > 0 ? (correctItems / items.length) : 0;
-                        totalScore += (pointsPerQ * ratio);
-                    }
-                } else if (qType === 'SHORT') {
-                    if (!userAns || userAns === '') {
-                        blankCount++;
-                    } else {
-                        const target = (q.correctAnswer || '').trim().toLowerCase();
-                        const given = userAns.trim().toLowerCase();
-                        if (given === target) {
-                            correctCount++;
-                            totalScore += pointsPerQ;
-                        } else {
-                            wrongCount++;
+                            const partialRatio = correctItems / items.length;
+                            totalScore += (pointsPerQ * partialRatio);
+                            if (partialRatio >= 0.5) correctCount += 0.5; 
+                            else wrongCount++;
                         }
                     }
-                } else {
+                } 
+                // 2. DẠNG TRẮC NGHIỆM NHIỀU LỰA CHỌN (PHẦN I)
+                else {
                     if (userAns === undefined || userAns === null) {
                         blankCount++;
-                    } else if (userAns === q.correct) {
+                    } else if (parseInt(userAns) === parseInt(q.correct)) {
                         correctCount++;
                         totalScore += pointsPerQ;
                     } else {
@@ -2572,13 +2453,11 @@
             });
 
             const finalScore = parseFloat(Math.min(10, Math.max(0, totalScore)).toFixed(2));
-            
-            // LẤY TRỰC TIẾP CLASSID TỪ ACTIVEEXAMSESSION ĐÃ ĐƯỢC LƯU AN TOÀN
-            const classId = activeExamSession.classId || currentClassId;
+            const targetClassId = activeExamSession.classId || currentClassId;
 
-            await dbAdd('attempts', {
+            const attemptRecord = {
                 id: `att_${activeExamSession.studentId}_${activeExamSession.examId}_${Date.now()}`,
-                classId,
+                classId: targetClassId,
                 studentId: activeExamSession.studentId,
                 examId: activeExamSession.examId,
                 assignmentId: activeExamSession.assignmentId,
@@ -2586,10 +2465,12 @@
                 score: finalScore,
                 correctCount: Math.round(correctCount),
                 wrongCount: Math.round(wrongCount),
-                blankCount,
+                blankCount: blankCount,
                 submittedAt: new Date().toISOString(),
                 status: 'submitted'
-            });
+            };
+
+            await dbAdd('attempts', attemptRecord);
 
             document.getElementById('examTakingInterface').classList.add('hidden');
             document.getElementById('examResultReviewCard').classList.remove('hidden');
@@ -2601,7 +2482,10 @@
             renderStudentReviewDetail(activeExamSession.questions, activeExamSession.answers);
 
             activeExamSession = null;
-            await loadDashboardData();
+            if (typeof loadDashboardData === 'function') {
+                await loadDashboardData();
+            }
+            
             showToast("Nộp bài thi thành công!", "success");
         }
 
