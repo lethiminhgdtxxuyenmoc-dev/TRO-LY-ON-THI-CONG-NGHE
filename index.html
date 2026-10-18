@@ -2397,96 +2397,110 @@
         }
 
         async function submitExam() {
-            if (examTimerInterval) {
-                clearInterval(examTimerInterval);
-                examTimerInterval = null;
-            }
+            try {
+                if (examTimerInterval) {
+                    clearInterval(examTimerInterval);
+                    examTimerInterval = null;
+                }
 
-            if (!activeExamSession) return;
+                if (!activeExamSession) return;
 
-            let correctCount = 0, wrongCount = 0, blankCount = 0;
-            const totalQ = activeExamSession.questions.length;
-            let totalScore = 0;
-            const pointsPerQ = totalQ > 0 ? (10 / totalQ) : 0;
+                let correctCount = 0, wrongCount = 0, blankCount = 0;
+                const totalQ = activeExamSession.questions.length;
+                let totalScore = 0;
+                const pointsPerQ = totalQ > 0 ? (10 / totalQ) : 0;
 
-            activeExamSession.questions.forEach((q, idx) => {
-                const qType = q.type || 'MCQ';
-                const userAns = activeExamSession.answers[idx];
+                activeExamSession.questions.forEach((q, idx) => {
+                    const qType = q.type || 'MCQ';
+                    const userAns = activeExamSession.answers[idx];
 
-                // 1. DẠNG ĐÚNG / SAI (PHẦN II)
-                if (qType === 'TF' || (q.items && q.items.length > 0)) {
-                    const items = q.items || [];
-                    if (!userAns || typeof userAns !== 'object' || Object.keys(userAns).length === 0) {
-                        blankCount++;
-                    } else {
-                        let correctItems = 0;
-                        items.forEach((item, itemIdx) => {
-                            if (userAns[itemIdx] === item.correct) {
-                                correctItems++;
-                            }
-                        });
-
-                        if (correctItems === items.length) {
-                            correctCount++;
-                            totalScore += pointsPerQ; 
-                        } else if (correctItems === 0) {
-                            wrongCount++;
+                    // DẠNG ĐÚNG / SAI (PHẦN II)
+                    if (qType === 'TF' || (q.items && q.items.length > 0)) {
+                        const items = q.items || [];
+                        if (!userAns || typeof userAns !== 'object' || Object.keys(userAns).length === 0) {
+                            blankCount++;
                         } else {
-                            const partialRatio = correctItems / items.length;
-                            totalScore += (pointsPerQ * partialRatio);
-                            if (partialRatio >= 0.5) correctCount += 0.5; 
-                            else wrongCount++;
+                            let correctItems = 0;
+                            items.forEach((item, itemIdx) => {
+                                if (userAns[itemIdx] === item.correct) {
+                                    correctItems++;
+                                }
+                            });
+
+                            if (correctItems === items.length) {
+                                correctCount++;
+                                totalScore += pointsPerQ; 
+                            } else if (correctItems === 0) {
+                                wrongCount++;
+                            } else {
+                                const partialRatio = correctItems / items.length;
+                                totalScore += (pointsPerQ * partialRatio);
+                                if (partialRatio >= 0.5) correctCount += 0.5; 
+                                else wrongCount++;
+                            }
+                        }
+                    } 
+                    // DẠNG TRẮC NGHIỆM NHIỀU LỰA CHỌN (PHẦN I)
+                    else {
+                        if (userAns === undefined || userAns === null) {
+                            blankCount++;
+                        } else if (parseInt(userAns) === parseInt(q.correct)) {
+                            correctCount++;
+                            totalScore += pointsPerQ;
+                        } else {
+                            wrongCount++;
                         }
                     }
-                } 
-                // 2. DẠNG TRẮC NGHIỆM NHIỀU LỰA CHỌN (PHẦN I)
-                else {
-                    if (userAns === undefined || userAns === null) {
-                        blankCount++;
-                    } else if (parseInt(userAns) === parseInt(q.correct)) {
-                        correctCount++;
-                        totalScore += pointsPerQ;
-                    } else {
-                        wrongCount++;
-                    }
+                });
+
+                const finalScore = parseFloat(Math.min(10, Math.max(0, totalScore)).toFixed(2));
+                const targetClassId = activeExamSession.classId || currentClassId;
+
+                const attemptRecord = {
+                    id: `att_${activeExamSession.studentId}_${activeExamSession.examId}_${Date.now()}`,
+                    classId: targetClassId,
+                    studentId: activeExamSession.studentId,
+                    examId: activeExamSession.examId,
+                    assignmentId: activeExamSession.assignmentId,
+                    answers: activeExamSession.answers,
+                    score: finalScore,
+                    correctCount: Math.round(correctCount),
+                    wrongCount: Math.round(wrongCount),
+                    blankCount: blankCount,
+                    submittedAt: new Date().toISOString(),
+                    status: 'submitted'
+                };
+
+                try {
+                    await dbAdd('attempts', attemptRecord);
+                } catch (dbErr) {
+                    console.warn("Lỗi lưu DB nhưng vẫn hiển thị kết quả:", dbErr);
                 }
-            });
 
-            const finalScore = parseFloat(Math.min(10, Math.max(0, totalScore)).toFixed(2));
-            const targetClassId = activeExamSession.classId || currentClassId;
+                document.getElementById('examTakingInterface').classList.add('hidden');
+                document.getElementById('examResultReviewCard').classList.remove('hidden');
+                document.getElementById('reviewScoreVal').innerText = finalScore;
+                document.getElementById('reviewCorrectVal').innerText = Math.round(correctCount);
+                document.getElementById('reviewWrongVal').innerText = Math.round(wrongCount);
+                document.getElementById('reviewBlankVal').innerText = blankCount;
 
-            const attemptRecord = {
-                id: `att_${activeExamSession.studentId}_${activeExamSession.examId}_${Date.now()}`,
-                classId: targetClassId,
-                studentId: activeExamSession.studentId,
-                examId: activeExamSession.examId,
-                assignmentId: activeExamSession.assignmentId,
-                answers: activeExamSession.answers,
-                score: finalScore,
-                correctCount: Math.round(correctCount),
-                wrongCount: Math.round(wrongCount),
-                blankCount: blankCount,
-                submittedAt: new Date().toISOString(),
-                status: 'submitted'
-            };
+                renderStudentReviewDetail(activeExamSession.questions, activeExamSession.answers);
 
-            await dbAdd('attempts', attemptRecord);
-
-            document.getElementById('examTakingInterface').classList.add('hidden');
-            document.getElementById('examResultReviewCard').classList.remove('hidden');
-            document.getElementById('reviewScoreVal').innerText = finalScore;
-            document.getElementById('reviewCorrectVal').innerText = Math.round(correctCount);
-            document.getElementById('reviewWrongVal').innerText = Math.round(wrongCount);
-            document.getElementById('reviewBlankVal').innerText = blankCount;
-
-            renderStudentReviewDetail(activeExamSession.questions, activeExamSession.answers);
-
-            activeExamSession = null;
-            if (typeof loadDashboardData === 'function') {
-                await loadDashboardData();
+                activeExamSession = null;
+                
+                try {
+                    if (typeof loadDashboardData === 'function') {
+                        await loadDashboardData();
+                    }
+                } catch (dashErr) {
+                    console.warn("Lỗi load Dashboard:", dashErr);
+                }
+                
+                showToast("Nộp bài thi thành công!", "success");
+            } catch (err) {
+                console.error("Lỗi nghiêm trọng khi nộp bài:", err);
+                showToast("Có lỗi xảy ra khi nộp bài, vui lòng thử lại!", "error");
             }
-            
-            showToast("Nộp bài thi thành công!", "success");
         }
 
         function resetStudentPortalToExams() {
